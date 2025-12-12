@@ -1,0 +1,22 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include label_creator *.css
+recursive-include label_creator *.csv
+recursive-include label_creator *.html
+recursive-include label_creator *.ico
+recursive-include label_creator *.js
+recursive-include label_creator *.json
+recursive-include label_creator *.md
+recursive-include label_creator *.png
+recursive-include label_creator *.py
+recursive-include label_creator *.svg
+recursive-include label_creator *.txt
+recursive-exclude label_creator *.pyc
+recursive-include templates *.html
+recursive-include templates *.json
+recursive-include static *.css
+recursive-include static *.js
