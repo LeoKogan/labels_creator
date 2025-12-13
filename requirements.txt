@@ -1,4 +1,3 @@
-frappe
 Flask==2.3.3
 python-docx==0.8.11
 qrcode==7.4.2
