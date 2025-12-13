@@ -154,7 +154,9 @@ async function loadLabelTypes() {
             for (const [key, value] of Object.entries(labelTypes)) {
                 const option = document.createElement('option');
                 option.value = key;
-                option.textContent = `${key} (${value.labels_per_row}x${value.labels_per_column})`;
+                // Use the 'name' field if available, otherwise show key with dimensions
+                const displayName = value.name || `${key} (${value.labels_per_row}x${value.labels_per_column})`;
+                option.textContent = displayName;
                 select.appendChild(option);
             }
         }
