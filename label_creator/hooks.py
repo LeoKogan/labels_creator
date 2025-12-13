@@ -7,6 +7,15 @@ app_description = "Create professional product labels with QR codes for ERPNext"
 app_email = "info@yourcompany.com"
 app_license = "MIT"
 
+# Fixtures
+# --------
+fixtures = [
+    {
+        "dt": "Web Page",
+        "filters": [["name", "in", ["label-creator"]]]
+    }
+]
+
 # Includes in <head>
 # ------------------
 
@@ -64,7 +73,7 @@ app_license = "MIT"
 # ------------
 
 # before_install = "label_creator.install.before_install"
-# after_install = "label_creator.install.after_install"
+after_install = "label_creator.install.install.after_install"
 
 # Uninstallation
 # ------------
