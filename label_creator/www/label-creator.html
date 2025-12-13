@@ -1,15 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
-    {% include "templates/includes/head.html" %}
-</head>
-<body>
-    {% include "templates/includes/navbar/navbar.html" %}
+{% extends "templates/web.html" %}
 
-    <div class="page-container" style="padding-top: 80px;">{# Main Content #}
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_content %}
 <div class="container mt-4" style="max-width: 1200px;">
     <div class="row">
         <div class="col-md-12">
@@ -123,28 +116,20 @@
     </div>
 </div>
 
+{% block style %}
 <style>
-body {
-    background-color: #f5f7fa;
-}
-.page-container {
-    min-height: 100vh;
-    padding-bottom: 60px;
-}
 .upload-area {
     transition: background-color 0.3s;
 }
 .upload-area:hover {
     background-color: #e9ecef !important;
 }
-.container {
-    background-color: transparent;
-}
 .card {
     box-shadow: 0 1px 3px rgba(0,0,0,0.12);
     border: 1px solid #e8e9ea;
 }
 </style>
+{% endblock %}
 
 <script>
 let processedContent = [];
@@ -317,8 +302,4 @@ document.getElementById('generateAnotherBtn').addEventListener('click', function
     document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
 });
 </script>
-
-</div>{# end page-container #}
-{% include "templates/includes/footer/footer.html" %}
-</body>
-</html>
+{% endblock %}
