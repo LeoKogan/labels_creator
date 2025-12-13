@@ -109,13 +109,17 @@ def generate_labels(label_type, processed_content_json):
         # Generate PDF
         pdf_path = create_labels_pdf(processed_content, label_type)
 
-        # Get relative path for serving
-        site_path = frappe.utils.get_site_path()
-        relative_path = os.path.relpath(pdf_path, site_path)
+        # Get filename
+        filename = os.path.basename(pdf_path)
+
+        # Create proper file URL for Frappe
+        # Files in public/files are accessible via /files/
+        file_url = f"/files/label_creator/{filename}"
 
         return {
             "success": True,
-            "file_url": "/" + relative_path
+            "file_url": file_url,
+            "filename": filename
         }
 
     except Exception as e:

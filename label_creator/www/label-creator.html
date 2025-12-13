@@ -91,6 +91,29 @@
             <p class="mt-2">Processing...</p>
         </div>
     </div>
+
+    <!-- Success Section -->
+    <div id="successSection" class="row mt-4" style="display: none;">
+        <div class="col-md-12">
+            <div class="alert alert-success" role="alert">
+                <h4 class="alert-heading">✅ Labels Generated Successfully!</h4>
+                <p>Your PDF file is ready for download.</p>
+                <hr>
+                <div class="d-flex gap-2">
+                    <a id="downloadLink" href="#" class="btn btn-success" download>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                        </svg>
+                        Download PDF
+                    </a>
+                    <button id="generateAnotherBtn" class="btn btn-primary">
+                        Generate Another
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -240,8 +263,16 @@ document.getElementById('generateBtn').addEventListener('click', async function(
         });
 
         if (response.message && response.message.success) {
-            window.open(response.message.file_url, '_blank');
-            frappe.msgprint('Labels generated successfully!');
+            // Show success section with download link
+            const downloadLink = document.getElementById('downloadLink');
+            downloadLink.href = response.message.file_url;
+            downloadLink.download = response.message.filename || 'labels.pdf';
+
+            document.getElementById('successSection').style.display = 'block';
+            document.getElementById('previewSection').style.display = 'none';
+
+            // Scroll to success section
+            document.getElementById('successSection').scrollIntoView({ behavior: 'smooth' });
         } else {
             frappe.msgprint('Error generating labels: ' + (response.message?.message || 'Unknown error'));
         }
@@ -256,6 +287,13 @@ document.getElementById('generateBtn').addEventListener('click', async function(
 // Start over
 document.getElementById('startOverBtn').addEventListener('click', function() {
     location.reload();
+});
+
+// Generate another
+document.getElementById('generateAnotherBtn').addEventListener('click', function() {
+    document.getElementById('successSection').style.display = 'none';
+    document.getElementById('previewSection').style.display = 'block';
+    document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
 });
 </script>
 {% endblock %}
