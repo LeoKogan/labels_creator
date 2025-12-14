@@ -375,7 +375,7 @@ function updateTotalLabels() {
     let total = 0;
     document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
         const index = cb.getAttribute('data-index');
-        const quantityInput = document.querySelector(`.quantity-input[data-index="${index}"]`);
+        const quantityInput = document.querySelector('.quantity-input[data-index="' + index + '"]');
         total += parseInt(quantityInput.value) || 0;
     });
     document.getElementById('totalLabels').textContent = total;
@@ -394,8 +394,8 @@ document.getElementById('generateBtn').addEventListener('click', function() {
     const selectedItems = [];
     document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
         const index = cb.getAttribute('data-index');
-        const priceInput = document.querySelector(`.price-input[data-index="${index}"]`);
-        const quantityInput = document.querySelector(`.quantity-input[data-index="${index}"]`);
+        const priceInput = document.querySelector('.price-input[data-index="' + index + '"]');
+        const quantityInput = document.querySelector('.quantity-input[data-index="' + index + '"]');
 
         const item = {
             ...processedContent[index],
