@@ -1,0 +1,52 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"TgJElP1bSH\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Consignor</span>\",\"col\":12}},{\"id\":\"jdZ1234abc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Type\",\"col\":3}},{\"id\":\"xyz9876def\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Creator\",\"col\":3}},{\"id\":\"abc1111ghi\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">Reports & Masters</span>\",\"col\":12}},{\"id\":\"def2222jkl\",\"type\":\"card\",\"data\":{\"card_name\":\"Label Types\",\"col\":4}}]",
+ "creation": "2025-01-14 12:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "tag",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Consignor",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Label Type",
+   "link_count": 0,
+   "link_to": "Label Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2025-01-14 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Consignor",
+ "name": "Consignor",
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 1,
+ "shortcuts": [
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Label Type",
+   "link_to": "Label Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "format": "{}",
+   "label": "Label Creator",
+   "link_to": "/label-creator",
+   "type": "Page"
+  }
+ ],
+ "title": "Consignor"
+}

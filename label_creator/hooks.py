@@ -89,6 +89,12 @@ fixtures = [
 		"filters": [
 			["name", "in", ["DYMO-30333 | S-14052", "S-16987", "S-18475"]]
 		]
+	},
+	{
+		"dt": "Workspace",
+		"filters": [
+			["name", "=", "Consignor"]
+		]
 	}
 ]
 

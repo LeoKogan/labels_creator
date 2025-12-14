@@ -1,6 +1,7 @@
 [
  {
   "doctype": "Label Type",
+  "name": "DYMO-30333 | S-14052",
   "label_type_name": "DYMO-30333 | S-14052",
   "display_name": "Dymo 30333 or S-14052 (1/2 x 1)",
   "label_width": 0.5,
@@ -25,6 +26,7 @@
  },
  {
   "doctype": "Label Type",
+  "name": "S-16987",
   "label_type_name": "S-16987",
   "display_name": "Uline S-16987 (1/2 x 1)",
   "label_width": 0.5,
@@ -49,6 +51,7 @@
  },
  {
   "doctype": "Label Type",
+  "name": "S-18475",
   "label_type_name": "S-18475",
   "display_name": "Jewelry (3/8 x 3/4)",
   "label_width": 2,
