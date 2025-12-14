@@ -7,13 +7,18 @@ app_description = "Create professional product labels with QR codes for ERPNext"
 app_email = "info@yourcompany.com"
 app_license = "MIT"
 
-# Fixtures
+# Website
 # --------
-fixtures = [
-    {
-        "dt": "Web Page",
-        "filters": [["name", "in", ["label-creator"]]]
-    }
+
+# Add to website context
+website_context = {
+    "brand_html": "Label Creator"
+}
+
+# Add custom route to website sidebar
+# This adds the Label Creator link to the sidebar without creating a Web Page
+website_route_rules = [
+    {"from_route": "/label-creator", "to_route": "label-creator"},
 ]
 
 # Includes in <head>

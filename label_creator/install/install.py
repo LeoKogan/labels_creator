@@ -6,36 +6,39 @@ def after_install():
     """
     Setup Label Creator after installation
     """
-    create_label_creator_web_page()
+    add_to_website_sidebar()
 
 
-def create_label_creator_web_page():
+def add_to_website_sidebar():
     """
-    Create or update the Label Creator web page for sidebar navigation
+    Add Label Creator link to website sidebar
     """
     try:
-        # Check if web page already exists
-        if frappe.db.exists("Web Page", "label-creator"):
-            doc = frappe.get_doc("Web Page", "label-creator")
-        else:
-            doc = frappe.new_doc("Web Page")
-            doc.name = "label-creator"
-            doc.route = "label-creator"
+        # Get or create Website Settings
+        if not frappe.db.exists("Website Settings", "Website Settings"):
+            return
 
-        # Update fields
-        doc.title = "Label Creator"
-        doc.published = 1
-        doc.show_sidebar = 1
-        doc.content_type = "Page Builder"
-        doc.main_section = "<h3>Label Creator</h3><p>Generate professional product labels with QR codes</p>"
-        doc.meta_title = "Label Creator"
-        doc.meta_description = "Create professional product labels with QR codes for your inventory"
+        website_settings = frappe.get_doc("Website Settings", "Website Settings")
 
-        doc.save(ignore_permissions=True)
-        frappe.db.commit()
+        # Check if the link already exists
+        existing = False
+        for item in website_settings.top_bar_items:
+            if item.url == "/label-creator":
+                existing = True
+                break
 
-        frappe.logger().info("Label Creator web page created/updated successfully")
+        if not existing:
+            # Add Label Creator to top bar
+            website_settings.append("top_bar_items", {
+                "label": "Label Creator",
+                "url": "/label-creator",
+                "right": 0
+            })
+            website_settings.save(ignore_permissions=True)
+            frappe.db.commit()
+
+        frappe.logger().info("Label Creator added to website navigation")
 
     except Exception as e:
-        frappe.logger().error(f"Error creating Label Creator web page: {str(e)}")
+        frappe.logger().error(f"Error adding Label Creator to website: {str(e)}")
         frappe.log_error(frappe.get_traceback(), "Label Creator Installation Error")
