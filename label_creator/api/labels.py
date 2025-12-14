@@ -201,9 +201,11 @@ def preview_label(label_type_config_json):
             has_pymupdf = True
         except ImportError:
             has_pymupdf = False
+            frappe.log_error("PyMuPDF not available, falling back to PDF", "Label Preview Warning")
 
         # Parse the configuration
         config = json.loads(label_type_config_json)
+        frappe.log_error(f"Config: {json.dumps(config, indent=2)}", "Label Preview Config")
 
         # Sample data for preview
         sample_data = {
@@ -225,6 +227,8 @@ def preview_label(label_type_config_json):
         margin_left = config.get('margin_left', 0.1875) * inch
         margin_right = config.get('margin_right', 0.1875) * inch
 
+        frappe.log_error(f"Page: {page_width/inch}x{page_height/inch}, Label: {label_width/inch}x{label_height/inch}, Grid: {labels_per_row}x{labels_per_column}", "Label Preview Dimensions")
+
         # Create a temporary directory for QR codes
         qr_dir = frappe.get_site_path('public', 'files', 'label_creator', 'qr_codes')
         os.makedirs(qr_dir, exist_ok=True)
@@ -233,29 +237,42 @@ def preview_label(label_type_config_json):
         buffer = io.BytesIO()
         c = canvas.Canvas(buffer, pagesize=(page_width, page_height))
 
-        # Calculate spacing
-        usable_width = page_width - margin_left - margin_right
-        usable_height = page_height - margin_top - margin_bottom
+        # Draw a border for debugging
+        c.setStrokeColorRGB(0.8, 0.8, 0.8)
+        c.rect(margin_left, margin_bottom,
+               page_width - margin_left - margin_right,
+               page_height - margin_top - margin_bottom)
 
         # Draw all labels on the page
+        labels_drawn = 0
         for row in range(labels_per_column):
             for col in range(labels_per_row):
                 x = margin_left + (col * label_width)
                 y = page_height - margin_top - ((row + 1) * label_height)
 
+                # Draw label border for debugging
+                c.setStrokeColorRGB(0.9, 0.9, 0.9)
+                c.rect(x, y, label_width, label_height)
+
                 # Draw the label
-                draw_label(
-                    c,
-                    x,
-                    y,
-                    sample_data['sku'],
-                    sample_data['product'],
-                    sample_data['display_price'],
-                    label_width,
-                    label_height,
-                    config,
-                    qr_dir
-                )
+                try:
+                    draw_label(
+                        c,
+                        x,
+                        y,
+                        sample_data['sku'],
+                        sample_data['product'],
+                        sample_data['display_price'],
+                        label_width,
+                        label_height,
+                        config,
+                        qr_dir
+                    )
+                    labels_drawn += 1
+                except Exception as label_error:
+                    frappe.log_error(f"Error drawing label at row {row}, col {col}: {str(label_error)}\n{frappe.get_traceback()}", "Label Draw Error")
+
+        frappe.log_error(f"Drew {labels_drawn} labels", "Label Preview Stats")
 
         c.save()
 
@@ -263,29 +280,45 @@ def preview_label(label_type_config_json):
         pdf_data = buffer.getvalue()
         buffer.close()
 
+        frappe.log_error(f"PDF size: {len(pdf_data)} bytes", "Label Preview PDF")
+
         # Convert PDF to image if PyMuPDF is available
         if has_pymupdf:
-            # Open PDF from bytes
-            pdf_document = fitz.open(stream=pdf_data, filetype="pdf")
-            page = pdf_document[0]  # Get first page
+            try:
+                # Open PDF from bytes
+                pdf_document = fitz.open(stream=pdf_data, filetype="pdf")
+                page = pdf_document[0]  # Get first page
 
-            # Render page to image (zoom factor 2 for better quality)
-            mat = fitz.Matrix(2, 2)
-            pix = page.get_pixmap(matrix=mat)
+                # Render page to image (zoom factor 2 for better quality)
+                mat = fitz.Matrix(2, 2)
+                pix = page.get_pixmap(matrix=mat)
 
-            # Convert to PNG
-            img_data = pix.tobytes("png")
-            pdf_document.close()
+                # Convert to PNG
+                img_data = pix.tobytes("png")
+                pdf_document.close()
 
-            # Convert to base64
-            img_base64 = base64.b64encode(img_data).decode('utf-8')
+                frappe.log_error(f"Image size: {len(img_data)} bytes", "Label Preview Image")
 
-            return {
-                "success": True,
-                "image_data": img_base64,
-                "image_type": "png",
-                "message": "Preview generated successfully"
-            }
+                # Convert to base64
+                img_base64 = base64.b64encode(img_data).decode('utf-8')
+
+                return {
+                    "success": True,
+                    "image_data": img_base64,
+                    "image_type": "png",
+                    "labels_drawn": labels_drawn,
+                    "message": "Preview generated successfully"
+                }
+            except Exception as conv_error:
+                frappe.log_error(f"PDF to image conversion error: {str(conv_error)}\n{frappe.get_traceback()}", "Label Preview Conversion Error")
+                # Fall back to PDF
+                pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
+                return {
+                    "success": True,
+                    "pdf_data": pdf_base64,
+                    "image_type": "pdf",
+                    "message": f"Preview generated (conversion error: {str(conv_error)})"
+                }
         else:
             # Fallback to PDF if conversion library not available
             pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
