@@ -286,28 +286,62 @@ function displayPreview(content, totalLabels) {
     content.forEach((item, index) => {
         const tr = document.createElement('tr');
         tr.setAttribute('data-index', index);
-        tr.innerHTML = `
-            <td>
-                <input type="checkbox" class="item-checkbox" data-index="${index}" checked>
-            </td>
-            <td>${item.sku}</td>
-            <td>${item.product}</td>
-            <td>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control price-input"
-                           data-index="${index}"
-                           value="${parseFloat(item.display_price).toFixed(2)}"
-                           step="0.01" min="0" style="max-width: 100px;">
-                </div>
-            </td>
-            <td>
-                <input type="number" class="form-control form-control-sm quantity-input"
-                       data-index="${index}"
-                       value="${item.quantity}"
-                       min="1" style="max-width: 80px;">
-            </td>
-        `;
+
+        // Checkbox cell
+        const cbCell = document.createElement('td');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'item-checkbox';
+        checkbox.setAttribute('data-index', index);
+        checkbox.checked = true;
+        cbCell.appendChild(checkbox);
+        tr.appendChild(cbCell);
+
+        // SKU cell
+        const skuCell = document.createElement('td');
+        skuCell.textContent = item.sku;
+        tr.appendChild(skuCell);
+
+        // Product cell
+        const productCell = document.createElement('td');
+        productCell.textContent = item.product;
+        tr.appendChild(productCell);
+
+        // Price cell
+        const priceCell = document.createElement('td');
+        const priceGroup = document.createElement('div');
+        priceGroup.className = 'input-group input-group-sm';
+
+        const dollarSign = document.createElement('span');
+        dollarSign.className = 'input-group-text';
+        dollarSign.textContent = '$';
+
+        const priceInput = document.createElement('input');
+        priceInput.type = 'number';
+        priceInput.className = 'form-control price-input';
+        priceInput.setAttribute('data-index', index);
+        priceInput.value = parseFloat(item.display_price).toFixed(2);
+        priceInput.step = '0.01';
+        priceInput.min = '0';
+        priceInput.style.maxWidth = '100px';
+
+        priceGroup.appendChild(dollarSign);
+        priceGroup.appendChild(priceInput);
+        priceCell.appendChild(priceGroup);
+        tr.appendChild(priceCell);
+
+        // Quantity cell
+        const qtyCell = document.createElement('td');
+        const qtyInput = document.createElement('input');
+        qtyInput.type = 'number';
+        qtyInput.className = 'form-control form-control-sm quantity-input';
+        qtyInput.setAttribute('data-index', index);
+        qtyInput.value = item.quantity;
+        qtyInput.min = '1';
+        qtyInput.style.maxWidth = '80px';
+        qtyCell.appendChild(qtyInput);
+        tr.appendChild(qtyCell);
+
         tbody.appendChild(tr);
     });
 
