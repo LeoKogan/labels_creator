@@ -9,13 +9,42 @@ from reportlab.platypus import Paragraph
 
 
 def get_label_dimensions():
-    """Load label dimensions from JSON file"""
+    """Load label dimensions from Label Type DocType"""
     try:
-        app_path = frappe.get_app_path('label_creator')
-        json_path = os.path.join(app_path, 'data', 'labels_types.json')
+        # Get all Label Type documents
+        label_types_list = frappe.get_all(
+            "Label Type",
+            fields=["*"],
+            order_by="label_type_name"
+        )
 
-        with open(json_path, 'r', encoding='utf-8') as file:
-            data = json.load(file)
+        # Convert to dictionary format for compatibility
+        data = {}
+        for lt in label_types_list:
+            data[lt.label_type_name] = {
+                "name": lt.display_name,
+                "label_width": lt.label_width,
+                "label_height": lt.label_height,
+                "labels_per_row": lt.labels_per_row,
+                "labels_per_column": lt.labels_per_column,
+                "label_orientation": lt.label_orientation or "portrait",
+                "page_width_inch": lt.page_width_inch,
+                "page_height_inch": lt.page_height_inch,
+                "margin_top": lt.margin_top or 0,
+                "margin_bottom": lt.margin_bottom or 0,
+                "margin_left": lt.margin_left or 0,
+                "margin_right": lt.margin_right or 0,
+                "qrcode_x_offset": lt.qrcode_x_offset or 0,
+                "qrcode_y_offset": lt.qrcode_y_offset or 0,
+                "qrcode_size_pts": lt.qrcode_size_pts or None,
+                "sku_x_offset": lt.sku_x_offset or 0,
+                "sku_y_offset": lt.sku_y_offset or 0,
+                "price_x_offset": lt.price_x_offset or 0,
+                "price_y_offset": lt.price_y_offset or 0,
+                "price_rotation": lt.price_rotation or 0,
+                "show_product_name": lt.show_product_name or 0,
+                "file_name": lt.file_name or "labels"
+            }
         return data
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Load Label Dimensions Error")

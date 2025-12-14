@@ -1,0 +1,259 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:label_type_name",
+ "creation": "2025-01-14 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "label_type_name",
+  "display_name",
+  "section_break_3",
+  "label_width",
+  "label_height",
+  "label_orientation",
+  "column_break_6",
+  "labels_per_row",
+  "labels_per_column",
+  "section_break_9",
+  "page_width_inch",
+  "page_height_inch",
+  "column_break_12",
+  "margin_top",
+  "margin_bottom",
+  "margin_left",
+  "margin_right",
+  "section_break_17",
+  "qrcode_x_offset",
+  "qrcode_y_offset",
+  "qrcode_size_pts",
+  "column_break_21",
+  "sku_x_offset",
+  "sku_y_offset",
+  "section_break_24",
+  "price_x_offset",
+  "price_y_offset",
+  "price_rotation",
+  "column_break_28",
+  "show_product_name",
+  "file_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "label_type_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label Type ID",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "display_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Display Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_3",
+   "fieldtype": "Section Break",
+   "label": "Label Dimensions"
+  },
+  {
+   "fieldname": "label_width",
+   "fieldtype": "Float",
+   "label": "Label Width (inches)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "label_height",
+   "fieldtype": "Float",
+   "label": "Label Height (inches)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "label_orientation",
+   "fieldtype": "Select",
+   "label": "Label Orientation",
+   "options": "portrait\nlandscape",
+   "default": "portrait"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "labels_per_row",
+   "fieldtype": "Int",
+   "label": "Labels per Row",
+   "reqd": 1
+  },
+  {
+   "fieldname": "labels_per_column",
+   "fieldtype": "Int",
+   "label": "Labels per Column",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break",
+   "label": "Page Setup"
+  },
+  {
+   "fieldname": "page_width_inch",
+   "fieldtype": "Float",
+   "label": "Page Width (inches)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "page_height_inch",
+   "fieldtype": "Float",
+   "label": "Page Height (inches)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "margin_top",
+   "fieldtype": "Float",
+   "label": "Margin Top (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "margin_bottom",
+   "fieldtype": "Float",
+   "label": "Margin Bottom (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "margin_left",
+   "fieldtype": "Float",
+   "label": "Margin Left (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "margin_right",
+   "fieldtype": "Float",
+   "label": "Margin Right (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "section_break_17",
+   "fieldtype": "Section Break",
+   "label": "QR Code Settings"
+  },
+  {
+   "fieldname": "qrcode_x_offset",
+   "fieldtype": "Float",
+   "label": "QR Code X Offset (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "qrcode_y_offset",
+   "fieldtype": "Float",
+   "label": "QR Code Y Offset (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "qrcode_size_pts",
+   "fieldtype": "Float",
+   "label": "QR Code Size (points)",
+   "description": "Leave blank for auto-calculation"
+  },
+  {
+   "fieldname": "column_break_21",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sku_x_offset",
+   "fieldtype": "Float",
+   "label": "SKU X Offset (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "sku_y_offset",
+   "fieldtype": "Float",
+   "label": "SKU Y Offset (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "section_break_24",
+   "fieldtype": "Section Break",
+   "label": "Price & Display Settings"
+  },
+  {
+   "fieldname": "price_x_offset",
+   "fieldtype": "Float",
+   "label": "Price X Offset (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "price_y_offset",
+   "fieldtype": "Float",
+   "label": "Price Y Offset (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "price_rotation",
+   "fieldtype": "Int",
+   "label": "Price Rotation (degrees)",
+   "default": "0"
+  },
+  {
+   "fieldname": "column_break_28",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "show_product_name",
+   "fieldtype": "Check",
+   "label": "Show Product Name"
+  },
+  {
+   "fieldname": "file_name",
+   "fieldtype": "Data",
+   "label": "Output File Name",
+   "default": "labels"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-01-14 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Label Creator",
+ "name": "Label Type",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Label Creator User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

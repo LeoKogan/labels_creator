@@ -80,6 +80,18 @@ website_route_rules = [
 # before_install = "label_creator.install.before_install"
 after_install = "label_creator.install.install.after_install"
 
+# Fixtures
+# --------
+
+fixtures = [
+	{
+		"dt": "Label Type",
+		"filters": [
+			["name", "in", ["DYMO-30333 | S-14052", "S-16987", "S-18475"]]
+		]
+	}
+]
+
 # Uninstallation
 # ------------
 

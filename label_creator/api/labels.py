@@ -133,12 +133,43 @@ def generate_labels(label_type, processed_content_json):
 @frappe.whitelist(allow_guest=False)
 def get_label_types():
     """
-    Get available label types configuration
+    Get available label types from DocType
     """
     try:
-        from label_creator.utils.label_generator import get_label_dimensions
+        # Get all Label Type documents
+        label_types_list = frappe.get_all(
+            "Label Type",
+            fields=["*"],
+            order_by="label_type_name"
+        )
 
-        label_types = get_label_dimensions()
+        # Convert to dictionary format for compatibility
+        label_types = {}
+        for lt in label_types_list:
+            label_types[lt.label_type_name] = {
+                "name": lt.display_name,
+                "label_width": lt.label_width,
+                "label_height": lt.label_height,
+                "labels_per_row": lt.labels_per_row,
+                "labels_per_column": lt.labels_per_column,
+                "label_orientation": lt.label_orientation or "portrait",
+                "page_width_inch": lt.page_width_inch,
+                "page_height_inch": lt.page_height_inch,
+                "margin_top": lt.margin_top or 0,
+                "margin_bottom": lt.margin_bottom or 0,
+                "margin_left": lt.margin_left or 0,
+                "margin_right": lt.margin_right or 0,
+                "qrcode_x_offset": lt.qrcode_x_offset or 0,
+                "qrcode_y_offset": lt.qrcode_y_offset or 0,
+                "qrcode_size_pts": lt.qrcode_size_pts or None,
+                "sku_x_offset": lt.sku_x_offset or 0,
+                "sku_y_offset": lt.sku_y_offset or 0,
+                "price_x_offset": lt.price_x_offset or 0,
+                "price_y_offset": lt.price_y_offset or 0,
+                "price_rotation": lt.price_rotation or 0,
+                "show_product_name": lt.show_product_name or 0,
+                "file_name": lt.file_name or "labels"
+            }
 
         return {
             "success": True,
