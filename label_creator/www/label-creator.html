@@ -60,10 +60,13 @@
                         <table class="table table-striped" id="previewTable">
                             <thead>
                                 <tr>
+                                    <th style="width: 50px;">
+                                        <input type="checkbox" id="selectAll" checked>
+                                    </th>
                                     <th>SKU</th>
                                     <th>Product</th>
-                                    <th>Price</th>
-                                    <th>Quantity</th>
+                                    <th style="width: 150px;">Price</th>
+                                    <th style="width: 120px;">Quantity</th>
                                 </tr>
                             </thead>
                             <tbody id="previewTableBody">
@@ -265,19 +268,68 @@ function displayPreview(content, totalLabels) {
     const tbody = document.getElementById('previewTableBody');
     tbody.innerHTML = '';
 
-    content.forEach(item => {
+    content.forEach((item, index) => {
         const tr = document.createElement('tr');
+        tr.setAttribute('data-index', index);
         tr.innerHTML = `
+            <td>
+                <input type="checkbox" class="item-checkbox" data-index="${index}" checked>
+            </td>
             <td>${item.sku}</td>
             <td>${item.product}</td>
-            <td>$${parseFloat(item.display_price).toFixed(2)}</td>
-            <td>${item.quantity}</td>
+            <td>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control price-input"
+                           data-index="${index}"
+                           value="${parseFloat(item.display_price).toFixed(2)}"
+                           step="0.01" min="0" style="max-width: 100px;">
+                </div>
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm quantity-input"
+                       data-index="${index}"
+                       value="${item.quantity}"
+                       min="1" style="max-width: 80px;">
+            </td>
         `;
         tbody.appendChild(tr);
     });
 
+    // Update total when checkboxes or quantities change
+    updateTotalLabels();
+
+    // Add event listeners
+    document.querySelectorAll('.item-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateTotalLabels);
+    });
+
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        input.addEventListener('input', updateTotalLabels);
+    });
+
+    // Select/deselect all checkbox
+    const selectAllCheckbox = document.getElementById('selectAll');
+    selectAllCheckbox.checked = true;
+    selectAllCheckbox.addEventListener('change', function() {
+        document.querySelectorAll('.item-checkbox').forEach(cb => {
+            cb.checked = this.checked;
+        });
+        updateTotalLabels();
+    });
+
     document.getElementById('previewSection').style.display = 'block';
     window.scrollTo(0, document.body.scrollHeight);
+}
+
+function updateTotalLabels() {
+    let total = 0;
+    document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
+        const index = cb.getAttribute('data-index');
+        const quantityInput = document.querySelector(`.quantity-input[data-index="${index}"]`);
+        total += parseInt(quantityInput.value) || 0;
+    });
+    document.getElementById('totalLabels').textContent = total;
 }
 
 // Generate labels
@@ -289,13 +341,36 @@ document.getElementById('generateBtn').addEventListener('click', function() {
         return;
     }
 
+    // Get selected items with updated prices and quantities
+    const selectedItems = [];
+    document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
+        const index = cb.getAttribute('data-index');
+        const priceInput = document.querySelector(`.price-input[data-index="${index}"]`);
+        const quantityInput = document.querySelector(`.quantity-input[data-index="${index}"]`);
+
+        const item = {
+            ...processedContent[index],
+            display_price: parseFloat(priceInput.value).toFixed(2),
+            quantity: parseInt(quantityInput.value) || 0
+        };
+
+        if (item.quantity > 0) {
+            selectedItems.push(item);
+        }
+    });
+
+    if (selectedItems.length === 0) {
+        alert('Please select at least one item to print');
+        return;
+    }
+
     document.getElementById('loadingSpinner').style.display = 'block';
 
     frappe.call({
         method: 'label_creator.api.labels.generate_labels',
         args: {
             label_type: labelType,
-            processed_content_json: JSON.stringify(processedContent)
+            processed_content_json: JSON.stringify(selectedItems)
         },
         callback: function(response) {
             document.getElementById('loadingSpinner').style.display = 'none';
