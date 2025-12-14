@@ -1,0 +1,266 @@
+import os
+import json
+import qrcode
+import frappe
+from datetime import datetime
+from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph
+
+
+def get_label_dimensions():
+    """Load label dimensions from JSON file"""
+    try:
+        app_path = frappe.get_app_path('label_creator')
+        json_path = os.path.join(app_path, 'data', 'labels_types.json')
+
+        with open(json_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+        return data
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Load Label Dimensions Error")
+        raise
+
+
+def get_or_create_qr(sku, qr_dir):
+    """
+    Retrieve (or generate) the QR code image for a given SKU.
+    """
+    qr_path = os.path.join(qr_dir, f"{sku}.png")
+    if not os.path.exists(qr_path):
+        qr = qrcode.QRCode(box_size=10, border=1)
+        qr.add_data(sku)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        qr_img.save(qr_path)
+    return qr_path
+
+
+def draw_rotated_text(c, text, center_x, center_y, angle, font_name="Helvetica-Bold", font_size=8):
+    """
+    Draw rotated text centered around (center_x, center_y).
+    """
+    c.saveState()
+    c.translate(center_x, center_y)
+    c.rotate(angle)
+    c.setFont(font_name, font_size)
+    text_width = c.stringWidth(text, font_name, font_size)
+    c.drawString(-text_width/2, -font_size/2, text)
+    c.restoreState()
+
+
+def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_dir):
+    """
+    Draw a single label on the ReportLab canvas.
+
+    For landscape orientation:
+      - The QR code is drawn on the left.
+      - The SKU (and optionally the product name) is drawn to the right of the QR.
+      - The price is drawn at the far right edge and rotated by the angle specified in config.
+
+    For portrait orientation:
+      - The QR code is centered at the top.
+      - The SKU (and optionally the product name) is drawn below the QR.
+      - The price is drawn near the bottom.
+    """
+    orientation = config.get("label_orientation", "portrait").lower()
+
+    # Convert label dimensions from inches to points (1 inch = 72 points)
+    label_width_pts = label_width * 72
+    label_height_pts = label_height * 72
+
+    # Offsets (provided in inches; conversion to points is done here)
+    qr_x_offset = config.get("qrcode_x_offset", 0) * 72
+    qr_y_offset = -config.get("qrcode_y_offset", 0) * 72
+    sku_x_offset = config.get("sku_x_offset", 0) * 72
+    sku_y_offset = -config.get("sku_y_offset", 0) * 72
+    product_name_x_offset = config.get("product_name_x_offset", 0) * 72
+    product_name_y_offset = -config.get("product_name_y_offset", 0) * 72
+    price_x_offset = config.get("price_x_offset", 0) * 72
+    price_y_offset = -config.get("price_y_offset", 0) * 72
+
+    # Retrieve (or generate) the QR code image
+    qr_path = get_or_create_qr(sku, qr_dir)
+
+    if orientation == "landscape":
+        # Landscape Layout
+        qr_size_pts = label_height_pts * 0.8  # 80% of label height
+
+        # Draw the QR code on the left
+        qr_x = x + qr_x_offset
+        qr_y = y + qr_y_offset - qr_size_pts
+
+        c.drawImage(
+            qr_path,
+            qr_x,
+            qr_y,
+            width=qr_size_pts,
+            height=qr_size_pts,
+            preserveAspectRatio=True,
+            mask='auto'
+        )
+
+        # Draw the SKU text immediately to the right of the QR
+        sku_text_x = x + sku_x_offset
+        sku_text_y = qr_y + sku_y_offset
+        styles = getSampleStyleSheet()
+        text_style = styles["BodyText"]
+        text_style.fontSize = 8
+        text_style.leading = 9
+        text_style.alignment = 0  # left alignment
+        sku_paragraph = Paragraph(sku, text_style)
+        sku_width = label_width_pts * 0.25
+        sku_paragraph.wrap(sku_width, qr_size_pts * 0.3)
+        sku_paragraph.drawOn(c, sku_text_x, sku_text_y)
+
+        # Optionally, draw the product name
+        if config.get("show_product_name", False):
+            c.setFont("Helvetica", 7)
+            product_text_x = x + product_name_x_offset
+            product_text_y = qr_y + product_name_y_offset
+
+            max_product_width = label_width_pts - product_text_x
+            product_style = styles["BodyText"]
+            product_style.fontSize = 7
+            product_style.leading = 8
+            product_paragraph = Paragraph(name, product_style)
+            product_paragraph.wrap(max_product_width, label_height_pts * 0.8)
+            product_paragraph.drawOn(c, product_text_x, product_text_y)
+
+        # Draw the price at the far right edge, rotated
+        price_text = f"${float(price):.2f}"
+        price_x = x + label_width_pts + price_x_offset
+        price_y = qr_y + price_y_offset
+        price_rotation = config.get("price_rotation", 90)
+        draw_rotated_text(c, price_text, price_x, price_y, angle=price_rotation,
+                          font_name="Helvetica-Bold", font_size=7)
+
+    else:
+        # Portrait Layout
+        qr_size_pts = min(label_width_pts, label_height_pts * 0.4)
+        c.drawImage(
+            qr_path,
+            x + (label_width_pts - qr_size_pts) / 2 + qr_x_offset,
+            y - qr_size_pts + qr_y_offset,
+            width=qr_size_pts,
+            height=qr_size_pts,
+            preserveAspectRatio=True,
+            mask='auto'
+        )
+
+        sku_text_y = y - qr_size_pts + sku_y_offset
+        sku_text_x = x + sku_x_offset
+        styles = getSampleStyleSheet()
+        text_style = styles["BodyText"]
+        text_style.fontSize = 8
+        text_style.leading = 10
+        text_style.alignment = 1  # Center alignment
+        sku_paragraph = Paragraph(sku, text_style)
+        sku_width = label_width_pts
+        sku_paragraph.wrap(sku_width, qr_size_pts * 0.3)
+        sku_paragraph.drawOn(c, sku_text_x, sku_text_y)
+
+        # Optionally, draw the product name
+        if config.get("show_product_name", False):
+            product_name_paragraph = Paragraph(name, text_style)
+            product_name_width = label_width_pts
+            product_name_paragraph.wrap(product_name_width, label_height_pts * 0.2)
+            product_name_x = x + product_name_x_offset
+            product_name_y = sku_text_y + product_name_y_offset
+            product_name_paragraph.drawOn(c, product_name_x, product_name_y)
+
+        c.setFont("Helvetica-Bold", 10)
+        c.drawCentredString(
+            x + label_width_pts / 2 + price_x_offset,
+            y - label_height_pts + price_y_offset,
+            f"${float(price):.2f}"
+        )
+
+
+def create_labels_pdf(labels_data, label_type):
+    """
+    Generate a PDF with labels based on the specified label type and product data
+    """
+    try:
+        LABEL_DIMENSIONS = get_label_dimensions()
+
+        if label_type not in LABEL_DIMENSIONS:
+            raise ValueError(f"Unsupported label type: {label_type}")
+
+        config = LABEL_DIMENSIONS[label_type]
+        label_width = config["label_width"]
+        label_height = config["label_height"]
+        labels_per_row = config["labels_per_row"]
+        labels_per_column = config["labels_per_column"]
+        margin_top = config["margin_top"] * 72
+        margin_bottom = config["margin_bottom"] * 72
+        margin_left = config["margin_left"] * 72
+        margin_right = config["margin_right"] * 72
+        file_name = config["file_name"]
+
+        page_width_pts = config["page_width_inch"] * 72
+        page_height_pts = config["page_height_inch"] * 72
+
+        usable_width = page_width_pts - margin_left - margin_right
+        usable_height = page_height_pts - margin_top - margin_bottom
+
+        horizontal_spacing = (
+            (usable_width - (labels_per_row * label_width * 72)) / (labels_per_row - 1)
+            if labels_per_row > 1 else 0
+        )
+        vertical_spacing = (
+            (usable_height - (labels_per_column * label_height * 72)) / (labels_per_column - 1)
+            if labels_per_column > 1 else 0
+        )
+
+        # Get current date
+        current_date = datetime.now().strftime('%Y%m%d')
+
+        # Create output directory in site's public folder
+        site_path = frappe.utils.get_site_path()
+        output_dir = os.path.join(site_path, 'public', 'files', 'label_creator')
+        os.makedirs(output_dir, exist_ok=True)
+
+        output_path = os.path.join(output_dir, f"{current_date}_{file_name}.pdf")
+
+        # QR codes directory
+        qr_dir = os.path.join(site_path, 'public', 'files', 'label_creator', 'qr_codes')
+        os.makedirs(qr_dir, exist_ok=True)
+
+        # Create canvas
+        c = canvas.Canvas(output_path, pagesize=(page_width_pts, page_height_pts))
+
+        x_start = margin_left
+        y_start = page_height_pts - margin_top
+        x_offset = x_start
+        y_offset = y_start
+        label_count = 0
+
+        for item in labels_data:
+            sku = item["sku"]
+            product = item["product"]
+            price = item["display_price"]
+            quantity = item["quantity"]
+
+            for _ in range(quantity):
+                if label_count > 0 and label_count % (labels_per_row * labels_per_column) == 0:
+                    c.showPage()
+                    x_offset = x_start
+                    y_offset = y_start
+
+                draw_label(c, x_offset, y_offset, sku, product, price,
+                          label_width, label_height, config, qr_dir)
+
+                x_offset += label_width * 72 + horizontal_spacing
+                if (label_count + 1) % labels_per_row == 0:
+                    x_offset = x_start
+                    y_offset -= label_height * 72 + vertical_spacing
+
+                label_count += 1
+
+        c.save()
+        return output_path
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Create Labels PDF Error")
+        raise

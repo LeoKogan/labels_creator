@@ -1,0 +1,490 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_content %}
+<div class="container mt-4" style="max-width: 1200px;">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mb-4">Label Creator</h1>
+            <p class="text-muted">Upload CSV files to generate product labels with QR codes</p>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Upload CSV Files</h5>
+
+                    <div class="upload-area p-4 text-center border rounded" style="border-style: dashed !important; background-color: #f8f9fa;">
+                        <input type="file" id="fileInput" multiple accept=".csv" style="display: none;">
+                        <label for="fileInput" style="cursor: pointer; margin: 0;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-cloud-upload mb-3" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z"/>
+                                <path fill-rule="evenodd" d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                            </svg>
+                            <h5>Choose CSV Files</h5>
+                            <p class="text-muted">or drag and drop here</p>
+                        </label>
+                    </div>
+
+                    <div id="fileList" class="mt-3"></div>
+
+                    <button id="uploadBtn" class="btn btn-primary mt-3" style="display: none;">
+                        Process Files
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Section -->
+    <div id="previewSection" class="row mt-4" style="display: none;">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Label Preview</h5>
+                    <p>Total Labels: <strong id="totalLabels">0</strong></p>
+
+                    <div class="row mb-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="labelType" class="form-label">Label Type</label>
+                            <select id="labelType" class="form-select">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <button id="generateBtn" class="btn btn-success me-2">
+                                Generate Labels (PDF)
+                            </button>
+                            <button id="startOverBtn" class="btn btn-secondary">
+                                Start Over
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="previewTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">
+                                        <input type="checkbox" id="selectAll" checked>
+                                    </th>
+                                    <th>SKU</th>
+                                    <th>Product</th>
+                                    <th style="width: 150px;">Price</th>
+                                    <th style="width: 120px;">Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="previewTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="row mt-4" style="display: none;">
+        <div class="col-md-12 text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Success Section -->
+    <div id="successSection" class="row mt-4" style="display: none;">
+        <div class="col-md-12">
+            <div class="alert alert-success" role="alert">
+                <h4 class="alert-heading">✅ Labels Generated Successfully!</h4>
+                <p>Your PDF file is ready for download.</p>
+                <hr>
+                <div class="d-flex gap-2">
+                    <a id="downloadLink" href="#" class="btn btn-success" download>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                        </svg>
+                        Download PDF
+                    </a>
+                    <button id="generateAnotherBtn" class="btn btn-primary">
+                        Generate Another
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block style %}
+<style>
+.upload-area {
+    transition: background-color 0.3s;
+}
+.upload-area:hover {
+    background-color: #e9ecef !important;
+}
+.card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    border: 1px solid #e8e9ea;
+}
+
+/* Editable input styling */
+.price-input, .quantity-input {
+    background-color: white !important;
+    border: 1px solid black !important;
+    border-radius: 3px;
+    padding: 4px 8px;
+}
+
+/* Make $ symbol blend with the row */
+.input-group-text {
+    background-color: transparent !important;
+    border: none !important;
+    padding-left: 0;
+    padding-right: 4px;
+    color: inherit;
+}
+
+.input-group {
+    border: none !important;
+    background: transparent !important;
+}
+
+/* Remove Bootstrap's input-group borders */
+.input-group > .form-control {
+    border-radius: 3px !important;
+}
+</style>
+{% endblock %}
+
+<script>
+let processedContent = [];
+
+// Ensure frappe is available
+if (typeof frappe === 'undefined') {
+    window.frappe = {
+        call: function(opts) {
+            const formData = new FormData();
+            for (const key in opts.args) {
+                formData.append(key, opts.args[key]);
+            }
+
+            fetch('/api/method/' + opts.method, {
+                method: 'POST',
+                headers: {
+                    'X-Frappe-CSRF-Token': frappe.csrf_token || ''
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (opts.callback) {
+                    opts.callback(data);
+                }
+            })
+            .catch(error => {
+                if (opts.error) {
+                    opts.error(error);
+                }
+                console.error('Error:', error);
+            });
+        },
+        msgprint: function(msg) {
+            alert(msg);
+        },
+        csrf_token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    };
+}
+
+// Load label types on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadLabelTypes();
+});
+
+function loadLabelTypes() {
+    frappe.call({
+        method: 'label_creator.api.labels.get_label_types',
+        args: {},
+        callback: function(response) {
+            if (response.message && response.message.success) {
+                const labelTypes = response.message.label_types;
+                const select = document.getElementById('labelType');
+                select.innerHTML = '';
+
+                for (const [key, value] of Object.entries(labelTypes)) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    // Use the 'name' field if available, otherwise show key with dimensions
+                    const displayName = value.name || `${key} (${value.labels_per_row}x${value.labels_per_column})`;
+                    option.textContent = displayName;
+                    select.appendChild(option);
+                }
+            }
+        },
+        error: function(error) {
+            console.error('Error loading label types:', error);
+            alert('Error loading label types');
+        }
+    });
+}
+
+// File input handling
+const fileInput = document.getElementById('fileInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const fileList = document.getElementById('fileList');
+
+fileInput.addEventListener('change', function() {
+    if (this.files.length > 0) {
+        fileList.innerHTML = '<ul class="list-group"></ul>';
+        const ul = fileList.querySelector('ul');
+
+        Array.from(this.files).forEach(file => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item';
+            li.textContent = file.name;
+            ul.appendChild(li);
+        });
+
+        uploadBtn.style.display = 'block';
+    } else {
+        fileList.innerHTML = '';
+        uploadBtn.style.display = 'none';
+    }
+});
+
+// Upload and process
+uploadBtn.addEventListener('click', function() {
+    const files = fileInput.files;
+    if (files.length === 0) return;
+
+    document.getElementById('loadingSpinner').style.display = 'block';
+
+    const filesData = [];
+    let filesRead = 0;
+
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            filesData.push({
+                filename: file.name,
+                content: e.target.result
+            });
+            filesRead++;
+
+            if (filesRead === files.length) {
+                // All files read, now upload
+                frappe.call({
+                    method: 'label_creator.api.labels.upload_and_process',
+                    args: {
+                        files_json: JSON.stringify(filesData)
+                    },
+                    callback: function(response) {
+                        document.getElementById('loadingSpinner').style.display = 'none';
+
+                        if (response.message && response.message.success) {
+                            processedContent = response.message.processed_content;
+                            displayPreview(processedContent, response.message.total_labels);
+                        } else {
+                            alert('Error processing files: ' + (response.message?.message || 'Unknown error'));
+                        }
+                    },
+                    error: function(error) {
+                        document.getElementById('loadingSpinner').style.display = 'none';
+                        console.error('Upload error:', error);
+                        alert('Error uploading files');
+                    }
+                });
+            }
+        };
+        reader.readAsText(file);
+    });
+});
+
+function displayPreview(content, totalLabels) {
+    document.getElementById('totalLabels').textContent = totalLabels;
+
+    const tbody = document.getElementById('previewTableBody');
+    tbody.innerHTML = '';
+
+    content.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-index', index);
+
+        // Checkbox cell
+        const cbCell = document.createElement('td');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'item-checkbox';
+        checkbox.setAttribute('data-index', index);
+        checkbox.checked = true;
+        cbCell.appendChild(checkbox);
+        tr.appendChild(cbCell);
+
+        // SKU cell
+        const skuCell = document.createElement('td');
+        skuCell.textContent = item.sku;
+        tr.appendChild(skuCell);
+
+        // Product cell
+        const productCell = document.createElement('td');
+        productCell.textContent = item.product;
+        tr.appendChild(productCell);
+
+        // Price cell
+        const priceCell = document.createElement('td');
+        const priceGroup = document.createElement('div');
+        priceGroup.className = 'input-group input-group-sm';
+
+        const dollarSign = document.createElement('span');
+        dollarSign.className = 'input-group-text';
+        dollarSign.textContent = '$';
+
+        const priceInput = document.createElement('input');
+        priceInput.type = 'number';
+        priceInput.className = 'form-control price-input';
+        priceInput.setAttribute('data-index', index);
+        priceInput.value = parseFloat(item.display_price).toFixed(2);
+        priceInput.step = '0.01';
+        priceInput.min = '0';
+        priceInput.style.maxWidth = '100px';
+
+        priceGroup.appendChild(dollarSign);
+        priceGroup.appendChild(priceInput);
+        priceCell.appendChild(priceGroup);
+        tr.appendChild(priceCell);
+
+        // Quantity cell
+        const qtyCell = document.createElement('td');
+        const qtyInput = document.createElement('input');
+        qtyInput.type = 'number';
+        qtyInput.className = 'form-control form-control-sm quantity-input';
+        qtyInput.setAttribute('data-index', index);
+        qtyInput.value = item.quantity;
+        qtyInput.min = '1';
+        qtyInput.style.maxWidth = '80px';
+        qtyCell.appendChild(qtyInput);
+        tr.appendChild(qtyCell);
+
+        tbody.appendChild(tr);
+    });
+
+    // Update total when checkboxes or quantities change
+    updateTotalLabels();
+
+    // Add event listeners
+    document.querySelectorAll('.item-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateTotalLabels);
+    });
+
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        input.addEventListener('input', updateTotalLabels);
+    });
+
+    // Select/deselect all checkbox
+    const selectAllCheckbox = document.getElementById('selectAll');
+    selectAllCheckbox.checked = true;
+    selectAllCheckbox.addEventListener('change', function() {
+        document.querySelectorAll('.item-checkbox').forEach(cb => {
+            cb.checked = this.checked;
+        });
+        updateTotalLabels();
+    });
+
+    document.getElementById('previewSection').style.display = 'block';
+    window.scrollTo(0, document.body.scrollHeight);
+}
+
+function updateTotalLabels() {
+    let total = 0;
+    document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
+        const index = cb.getAttribute('data-index');
+        const quantityInput = document.querySelector('.quantity-input[data-index="' + index + '"]');
+        total += parseInt(quantityInput.value) || 0;
+    });
+    document.getElementById('totalLabels').textContent = total;
+}
+
+// Generate labels
+document.getElementById('generateBtn').addEventListener('click', function() {
+    const labelType = document.getElementById('labelType').value;
+
+    if (!labelType) {
+        alert('Please select a label type');
+        return;
+    }
+
+    // Get selected items with updated prices and quantities
+    const selectedItems = [];
+    document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
+        const index = cb.getAttribute('data-index');
+        const priceInput = document.querySelector('.price-input[data-index="' + index + '"]');
+        const quantityInput = document.querySelector('.quantity-input[data-index="' + index + '"]');
+
+        const item = {
+            ...processedContent[index],
+            display_price: parseFloat(priceInput.value).toFixed(2),
+            quantity: parseInt(quantityInput.value) || 0
+        };
+
+        if (item.quantity > 0) {
+            selectedItems.push(item);
+        }
+    });
+
+    if (selectedItems.length === 0) {
+        alert('Please select at least one item to print');
+        return;
+    }
+
+    document.getElementById('loadingSpinner').style.display = 'block';
+
+    frappe.call({
+        method: 'label_creator.api.labels.generate_labels',
+        args: {
+            label_type: labelType,
+            processed_content_json: JSON.stringify(selectedItems)
+        },
+        callback: function(response) {
+            document.getElementById('loadingSpinner').style.display = 'none';
+
+            if (response.message && response.message.success) {
+                // Show success section with download link
+                const downloadLink = document.getElementById('downloadLink');
+                downloadLink.href = response.message.file_url;
+                downloadLink.download = response.message.filename || 'labels.pdf';
+
+                document.getElementById('successSection').style.display = 'block';
+                document.getElementById('previewSection').style.display = 'none';
+
+                // Scroll to success section
+                document.getElementById('successSection').scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert('Error generating labels: ' + (response.message?.message || 'Unknown error'));
+            }
+        },
+        error: function(error) {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            console.error('Generation error:', error);
+            alert('Error generating labels');
+        }
+    });
+});
+
+// Start over
+document.getElementById('startOverBtn').addEventListener('click', function() {
+    location.reload();
+});
+
+// Generate another
+document.getElementById('generateAnotherBtn').addEventListener('click', function() {
+    document.getElementById('successSection').style.display = 'none';
+    document.getElementById('previewSection').style.display = 'block';
+    document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+});
+</script>
+{% endblock %}

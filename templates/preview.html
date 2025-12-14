@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Label Preview</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Label Preview</h1>
+        <p>Total Labels: {{ total_labels }}</p>
+
+        <form id="generateForm" action="/generate_labels" method="POST">
+            <div class="form-group">
+                <label for="label_type">Label Type:</label>
+                <select name="label_type" id="label_type" required>
+                    {% for label_id, details in label_types.items() %}
+                        <option value="{{ label_id }}">
+                            {{ label_id }} ({{ details.labels_per_row }}x{{ details.labels_per_column }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="output_format">Output Format:</label>
+                <select name="output_format" id="output_format" required>
+                    <option value="pdf">PDF</option>
+                    <option value="word">Word Document</option>
+                </select>
+            </div>
+
+            <input type="hidden" name="processed_content" value="{{ processed_content | tojson }}">
+
+            <button type="submit" class="btn-primary">Generate Labels</button>
+            <a href="/" class="btn-secondary">Start Over</a>
+        </form>
+
+        <h2>Products to be labeled:</h2>
+        <div class="preview-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in processed_content %}
+                    <tr>
+                        <td>{{ item.sku }}</td>
+                        <td>{{ item.product }}</td>
+                        <td>${{ "%.2f"|format(item.display_price|float) }}</td>
+                        <td>{{ item.quantity }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

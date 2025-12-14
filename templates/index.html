@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Label Creator - Upload CSV</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Label Creator</h1>
+        <p>Upload your CSV files to generate product labels with QR codes</p>
+
+        <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
+            <div class="upload-area">
+                <input type="file" name="files[]" id="fileInput" multiple accept=".csv" required>
+                <label for="fileInput">
+                    <span>Choose CSV Files</span>
+                    <p>or drag and drop here</p>
+                </label>
+            </div>
+
+            <div id="fileList"></div>
+
+            <button type="submit" class="btn-primary">Upload and Process</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const uploadForm = document.getElementById('uploadForm');
+
+        fileInput.addEventListener('change', function() {
+            fileList.innerHTML = '';
+            if (this.files.length > 0) {
+                const list = document.createElement('ul');
+                Array.from(this.files).forEach(file => {
+                    const li = document.createElement('li');
+                    li.textContent = file.name;
+                    list.appendChild(li);
+                });
+                fileList.appendChild(list);
+            }
+        });
+
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                document.body.innerHTML = html;
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML =
+                    '<div class="error">Error: ' + error.message + '</div>';
+            });
+        });
+    </script>
+</body>
+</html>
