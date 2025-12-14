@@ -47,12 +47,20 @@
                     <h5 class="card-title">Label Preview</h5>
                     <p>Total Labels: <strong id="totalLabels">0</strong></p>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
+                    <div class="row mb-3 align-items-end">
+                        <div class="col-md-4">
                             <label for="labelType" class="form-label">Label Type</label>
                             <select id="labelType" class="form-select">
                                 <option value="">Loading...</option>
                             </select>
+                        </div>
+                        <div class="col-md-8">
+                            <button id="generateBtn" class="btn btn-success me-2">
+                                Generate Labels (PDF)
+                            </button>
+                            <button id="startOverBtn" class="btn btn-secondary">
+                                Start Over
+                            </button>
                         </div>
                     </div>
 
@@ -73,13 +81,6 @@
                             </tbody>
                         </table>
                     </div>
-
-                    <button id="generateBtn" class="btn btn-success">
-                        Generate Labels (PDF)
-                    </button>
-                    <button id="startOverBtn" class="btn btn-secondary">
-                        Start Over
-                    </button>
                 </div>
             </div>
         </div>
