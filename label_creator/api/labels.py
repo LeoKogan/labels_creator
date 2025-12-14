@@ -182,3 +182,74 @@ def get_label_types():
             "success": False,
             "message": str(e)
         }
+
+
+@frappe.whitelist(allow_guest=False)
+def preview_label(label_type_config_json):
+    """
+    Generate a preview image of a single label based on configuration
+    """
+    try:
+        import io
+        import base64
+        from label_creator.utils.label_generator import draw_label, get_or_create_qr
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.units import inch
+
+        # Parse the configuration
+        config = json.loads(label_type_config_json)
+
+        # Sample data for preview
+        sample_data = {
+            'sku': 'SAMPLE-123',
+            'product': 'Sample Product',
+            'display_price': '29.99'
+        }
+
+        # Get label dimensions
+        label_width = config.get('label_width', 1) * inch
+        label_height = config.get('label_height', 1) * inch
+
+        # Create a temporary directory for QR codes
+        qr_dir = frappe.get_site_path('public', 'files', 'label_creator', 'qr_codes')
+        os.makedirs(qr_dir, exist_ok=True)
+
+        # Create canvas in memory
+        buffer = io.BytesIO()
+        c = canvas.Canvas(buffer, pagesize=(label_width, label_height))
+
+        # Draw the label at position (0, 0)
+        draw_label(
+            c,
+            0,
+            0,
+            sample_data['sku'],
+            sample_data['product'],
+            sample_data['display_price'],
+            label_width,
+            label_height,
+            config,
+            qr_dir
+        )
+
+        c.save()
+
+        # Get the PDF data
+        pdf_data = buffer.getvalue()
+        buffer.close()
+
+        # Convert to base64 for display
+        pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
+
+        return {
+            "success": True,
+            "pdf_data": pdf_base64,
+            "message": "Preview generated successfully"
+        }
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Label Preview Error")
+        return {
+            "success": False,
+            "message": str(e)
+        }
