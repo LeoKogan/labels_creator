@@ -9,7 +9,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=False)
 def upload_and_process(files_json):
     """
     Process uploaded CSV files and return product data
@@ -96,7 +96,7 @@ def upload_and_process(files_json):
         }
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=False)
 def generate_labels(label_type, processed_content_json):
     """
     Generate PDF labels and return file path
@@ -130,7 +130,7 @@ def generate_labels(label_type, processed_content_json):
         }
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=False)
 def get_label_types():
     """
     Get available label types configuration

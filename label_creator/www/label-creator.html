@@ -134,36 +134,57 @@
 <script>
 let processedContent = [];
 
+// Ensure frappe is available
+if (typeof frappe === 'undefined') {
+    window.frappe = {
+        call: function(opts) {
+            return $.ajax({
+                url: '/api/method/' + opts.method,
+                type: 'POST',
+                data: opts.args,
+                success: function(data) {
+                    if (opts.callback) {
+                        opts.callback(data);
+                    }
+                }
+            });
+        },
+        msgprint: function(msg) {
+            alert(msg);
+        }
+    };
+}
+
 // Load label types on page load
-frappe.ready(function() {
+$(document).ready(function() {
     loadLabelTypes();
 });
 
-async function loadLabelTypes() {
-    try {
-        const response = await frappe.call({
-            method: 'label_creator.api.labels.get_label_types',
-            args: {}
-        });
+function loadLabelTypes() {
+    frappe.call({
+        method: 'label_creator.api.labels.get_label_types',
+        args: {},
+        callback: function(response) {
+            if (response.message && response.message.success) {
+                const labelTypes = response.message.label_types;
+                const select = document.getElementById('labelType');
+                select.innerHTML = '';
 
-        if (response.message && response.message.success) {
-            const labelTypes = response.message.label_types;
-            const select = document.getElementById('labelType');
-            select.innerHTML = '';
-
-            for (const [key, value] of Object.entries(labelTypes)) {
-                const option = document.createElement('option');
-                option.value = key;
-                // Use the 'name' field if available, otherwise show key with dimensions
-                const displayName = value.name || `${key} (${value.labels_per_row}x${value.labels_per_column})`;
-                option.textContent = displayName;
-                select.appendChild(option);
+                for (const [key, value] of Object.entries(labelTypes)) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    // Use the 'name' field if available, otherwise show key with dimensions
+                    const displayName = value.name || `${key} (${value.labels_per_row}x${value.labels_per_column})`;
+                    option.textContent = displayName;
+                    select.appendChild(option);
+                }
             }
+        },
+        error: function(error) {
+            console.error('Error loading label types:', error);
+            alert('Error loading label types');
         }
-    } catch (error) {
-        console.error('Error loading label types:', error);
-        frappe.msgprint('Error loading label types');
-    }
+    });
 }
 
 // File input handling
@@ -191,42 +212,51 @@ fileInput.addEventListener('change', function() {
 });
 
 // Upload and process
-uploadBtn.addEventListener('click', async function() {
+uploadBtn.addEventListener('click', function() {
     const files = fileInput.files;
     if (files.length === 0) return;
 
     document.getElementById('loadingSpinner').style.display = 'block';
 
-    try {
-        const filesData = [];
+    const filesData = [];
+    let filesRead = 0;
 
-        for (let file of files) {
-            const content = await file.text();
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
             filesData.push({
                 filename: file.name,
-                content: content
+                content: e.target.result
             });
-        }
+            filesRead++;
 
-        const response = await frappe.call({
-            method: 'label_creator.api.labels.upload_and_process',
-            args: {
-                files_json: JSON.stringify(filesData)
+            if (filesRead === files.length) {
+                // All files read, now upload
+                frappe.call({
+                    method: 'label_creator.api.labels.upload_and_process',
+                    args: {
+                        files_json: JSON.stringify(filesData)
+                    },
+                    callback: function(response) {
+                        document.getElementById('loadingSpinner').style.display = 'none';
+
+                        if (response.message && response.message.success) {
+                            processedContent = response.message.processed_content;
+                            displayPreview(processedContent, response.message.total_labels);
+                        } else {
+                            alert('Error processing files: ' + (response.message?.message || 'Unknown error'));
+                        }
+                    },
+                    error: function(error) {
+                        document.getElementById('loadingSpinner').style.display = 'none';
+                        console.error('Upload error:', error);
+                        alert('Error uploading files');
+                    }
+                });
             }
-        });
-
-        if (response.message && response.message.success) {
-            processedContent = response.message.processed_content;
-            displayPreview(processedContent, response.message.total_labels);
-        } else {
-            frappe.msgprint('Error processing files: ' + (response.message?.message || 'Unknown error'));
-        }
-    } catch (error) {
-        console.error('Upload error:', error);
-        frappe.msgprint('Error uploading files');
-    } finally {
-        document.getElementById('loadingSpinner').style.display = 'none';
-    }
+        };
+        reader.readAsText(file);
+    });
 });
 
 function displayPreview(content, totalLabels) {
@@ -251,45 +281,46 @@ function displayPreview(content, totalLabels) {
 }
 
 // Generate labels
-document.getElementById('generateBtn').addEventListener('click', async function() {
+document.getElementById('generateBtn').addEventListener('click', function() {
     const labelType = document.getElementById('labelType').value;
 
     if (!labelType) {
-        frappe.msgprint('Please select a label type');
+        alert('Please select a label type');
         return;
     }
 
     document.getElementById('loadingSpinner').style.display = 'block';
 
-    try {
-        const response = await frappe.call({
-            method: 'label_creator.api.labels.generate_labels',
-            args: {
-                label_type: labelType,
-                processed_content_json: JSON.stringify(processedContent)
+    frappe.call({
+        method: 'label_creator.api.labels.generate_labels',
+        args: {
+            label_type: labelType,
+            processed_content_json: JSON.stringify(processedContent)
+        },
+        callback: function(response) {
+            document.getElementById('loadingSpinner').style.display = 'none';
+
+            if (response.message && response.message.success) {
+                // Show success section with download link
+                const downloadLink = document.getElementById('downloadLink');
+                downloadLink.href = response.message.file_url;
+                downloadLink.download = response.message.filename || 'labels.pdf';
+
+                document.getElementById('successSection').style.display = 'block';
+                document.getElementById('previewSection').style.display = 'none';
+
+                // Scroll to success section
+                document.getElementById('successSection').scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert('Error generating labels: ' + (response.message?.message || 'Unknown error'));
             }
-        });
-
-        if (response.message && response.message.success) {
-            // Show success section with download link
-            const downloadLink = document.getElementById('downloadLink');
-            downloadLink.href = response.message.file_url;
-            downloadLink.download = response.message.filename || 'labels.pdf';
-
-            document.getElementById('successSection').style.display = 'block';
-            document.getElementById('previewSection').style.display = 'none';
-
-            // Scroll to success section
-            document.getElementById('successSection').scrollIntoView({ behavior: 'smooth' });
-        } else {
-            frappe.msgprint('Error generating labels: ' + (response.message?.message || 'Unknown error'));
+        },
+        error: function(error) {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            console.error('Generation error:', error);
+            alert('Error generating labels');
         }
-    } catch (error) {
-        console.error('Generation error:', error);
-        frappe.msgprint('Error generating labels');
-    } finally {
-        document.getElementById('loadingSpinner').style.display = 'none';
-    }
+    });
 });
 
 // Start over
