@@ -1,0 +1,85 @@
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "label_creator"
+version = "0.0.1"
+description = "Create professional product labels with QR codes for ERPNext"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Company", email = "info@yourcompany.com"}
+]
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: Frappe",
+]
+
+dependencies = [
+    "frappe",
+    "qrcode>=7.4.2",
+    "Pillow>=10.0.0",
+    "reportlab>=4.0.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/label_creator"
+Documentation = "https://github.com/yourusername/label_creator/blob/main/README.md"
+Repository = "https://github.com/yourusername/label_creator"
+Issues = "https://github.com/yourusername/label_creator/issues"
+
+[tool.black]
+line-length = 99
+target-version = ['py310']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | node_modules
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 99
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+[tool.ruff]
+line-length = 99
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "F401",  # imported but unused (sometimes needed for Frappe)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
