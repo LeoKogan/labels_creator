@@ -141,25 +141,40 @@ let processedContent = [];
 if (typeof frappe === 'undefined') {
     window.frappe = {
         call: function(opts) {
-            return $.ajax({
-                url: '/api/method/' + opts.method,
-                type: 'POST',
-                data: opts.args,
-                success: function(data) {
-                    if (opts.callback) {
-                        opts.callback(data);
-                    }
+            const formData = new FormData();
+            for (const key in opts.args) {
+                formData.append(key, opts.args[key]);
+            }
+
+            fetch('/api/method/' + opts.method, {
+                method: 'POST',
+                headers: {
+                    'X-Frappe-CSRF-Token': frappe.csrf_token || ''
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (opts.callback) {
+                    opts.callback(data);
                 }
+            })
+            .catch(error => {
+                if (opts.error) {
+                    opts.error(error);
+                }
+                console.error('Error:', error);
             });
         },
         msgprint: function(msg) {
             alert(msg);
-        }
+        },
+        csrf_token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
     };
 }
 
 // Load label types on page load
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     loadLabelTypes();
 });
 
