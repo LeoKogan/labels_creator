@@ -106,15 +106,18 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
     label_width_pts = label_width * 72
     label_height_pts = label_height * 72
 
-    # Offsets (provided in inches; conversion to points is done here)
+    # Offsets are specified as positive values:
+    # - X offset: distance from LEFT edge of label (positive = move right)
+    # - Y offset: distance from TOP edge of label (positive = move down)
+    # Convert from inches to points here
     qr_x_offset = config.get("qrcode_x_offset", 0) * 72
-    qr_y_offset = -config.get("qrcode_y_offset", 0) * 72
+    qr_y_offset = config.get("qrcode_y_offset", 0) * 72
     sku_x_offset = config.get("sku_x_offset", 0) * 72
-    sku_y_offset = -config.get("sku_y_offset", 0) * 72
+    sku_y_offset = config.get("sku_y_offset", 0) * 72
     product_name_x_offset = config.get("product_name_x_offset", 0) * 72
-    product_name_y_offset = -config.get("product_name_y_offset", 0) * 72
+    product_name_y_offset = config.get("product_name_y_offset", 0) * 72
     price_x_offset = config.get("price_x_offset", 0) * 72
-    price_y_offset = -config.get("price_y_offset", 0) * 72
+    price_y_offset = config.get("price_y_offset", 0) * 72
 
     # Font settings
     sku_font_type = config.get("sku_font_type", "Helvetica")
@@ -129,13 +132,15 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
     if orientation == "landscape":
         # Landscape Layout
-        # Layout: QR on left | SKU and Product Name stacked on right | Price rotated at far right
+        # Offsets are from: X = left edge, Y = top edge (positive Y goes down)
 
         qr_size_pts = label_height_pts * 0.8  # 80% of label height
 
-        # Draw the QR code on the left
+        # Draw the QR code
+        # Position from left edge + offset, and from top edge - offset
+        # (subtract qr_size_pts because drawImage uses bottom-left corner)
         qr_x = x + qr_x_offset
-        qr_y = y + qr_y_offset - qr_size_pts
+        qr_y = y - qr_y_offset - qr_size_pts
 
         c.drawImage(
             qr_path,
@@ -147,13 +152,10 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
             mask='auto'
         )
 
-        # Calculate text area to the right of QR
-        text_area_x = x + qr_size_pts + 3 + sku_x_offset  # 3pts spacing after QR
-        text_area_width = label_width_pts - qr_size_pts - 10  # Reserve space for price
-
-        # Draw the SKU text to the right of QR, at the top
-        sku_text_x = text_area_x
-        sku_text_y = qr_y + qr_size_pts - 10 + sku_y_offset  # Start near top
+        # Draw the SKU text
+        # User specifies position from left and top edges
+        sku_text_x = x + sku_x_offset
+        sku_text_y = y - sku_y_offset
         styles = getSampleStyleSheet()
         sku_style = styles["BodyText"]
         sku_style.fontSize = sku_font_size
@@ -161,13 +163,13 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
         sku_style.alignment = 0  # left alignment
         sku_style.fontName = sku_font_type
         sku_paragraph = Paragraph(sku, sku_style)
-        sku_paragraph.wrap(text_area_width, sku_font_size * 2)  # Max height for SKU
+        sku_paragraph.wrap(label_width_pts - sku_x_offset, sku_font_size * 2)
         sku_paragraph.drawOn(c, sku_text_x, sku_text_y)
 
-        # Draw product name below SKU if enabled
+        # Draw product name if enabled
         if config.get("show_product_name", False):
-            product_text_x = text_area_x + product_name_x_offset
-            product_text_y = sku_text_y - 15 + product_name_y_offset  # 15pts below SKU
+            product_text_x = x + product_name_x_offset
+            product_text_y = y - product_name_y_offset
 
             product_style = styles["BodyText"]
             product_style.fontSize = product_name_font_size
@@ -175,28 +177,31 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
             product_style.alignment = 0  # left alignment
             product_style.fontName = product_name_font_type
             product_paragraph = Paragraph(name, product_style)
-            product_paragraph.wrap(text_area_width, qr_size_pts * 0.4)  # Max height for product
+            product_paragraph.wrap(label_width_pts - product_name_x_offset, product_name_font_size * 3)
             product_paragraph.drawOn(c, product_text_x, product_text_y)
 
-        # Draw the price at the far right edge, rotated
+        # Draw the price
         price_text = f"${float(price):.2f}"
-        price_x = x + label_width_pts + price_x_offset
-        price_y = qr_y + (qr_size_pts / 2) + price_y_offset  # Centered vertically
+        price_x = x + price_x_offset
+        price_y = y - price_y_offset
         price_rotation = config.get("price_rotation", 90)
         draw_rotated_text(c, price_text, price_x, price_y, angle=price_rotation,
                           font_name=price_font_type, font_size=price_font_size)
 
     else:
         # Portrait Layout
-        # Layout from top to bottom: QR code → SKU → Product Name (optional) → Price
+        # Offsets are from: X = left edge, Y = top edge (positive Y goes down)
 
         qr_size_pts = min(label_width_pts, label_height_pts * 0.4)
 
-        # Draw QR code at the top
-        qr_y = y - qr_size_pts + qr_y_offset
+        # Draw QR code
+        # Position from left edge + offset, and from top edge - offset
+        # (subtract qr_size_pts because drawImage uses bottom-left corner)
+        qr_x = x + qr_x_offset
+        qr_y = y - qr_y_offset - qr_size_pts
         c.drawImage(
             qr_path,
-            x + (label_width_pts - qr_size_pts) / 2 + qr_x_offset,
+            qr_x,
             qr_y,
             width=qr_size_pts,
             height=qr_size_pts,
@@ -204,9 +209,10 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
             mask='auto'
         )
 
-        # Draw SKU text below QR code
+        # Draw SKU text
+        # User specifies position from left and top edges
         sku_text_x = x + sku_x_offset
-        sku_text_y = qr_y - 12 + sku_y_offset  # 12pts below QR for spacing
+        sku_text_y = y - sku_y_offset
         styles = getSampleStyleSheet()
         sku_style = styles["BodyText"]
         sku_style.fontSize = sku_font_size
@@ -215,11 +221,14 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
         sku_style.fontName = sku_font_type
         sku_paragraph = Paragraph(sku, sku_style)
         sku_width = label_width_pts
-        sku_paragraph.wrap(sku_width, sku_font_size * 2)  # Max height for SKU
+        sku_paragraph.wrap(sku_width, sku_font_size * 2)
         sku_paragraph.drawOn(c, sku_text_x, sku_text_y)
 
-        # Draw product name below SKU if enabled
+        # Draw product name if enabled
         if config.get("show_product_name", False):
+            product_text_x = x + product_name_x_offset
+            product_text_y = y - product_name_y_offset
+
             product_style = styles["BodyText"]
             product_style.fontSize = product_name_font_size
             product_style.leading = product_name_font_size + 1
@@ -227,16 +236,16 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
             product_style.fontName = product_name_font_type
             product_name_paragraph = Paragraph(name, product_style)
             product_name_width = label_width_pts
-            product_name_paragraph.wrap(product_name_width, product_name_font_size * 3)  # Max height for product name
-            product_name_x = x + product_name_x_offset
-            product_name_y = sku_text_y - 18 + product_name_y_offset  # 18pts below SKU
-            product_name_paragraph.drawOn(c, product_name_x, product_name_y)
+            product_name_paragraph.wrap(product_name_width, product_name_font_size * 3)
+            product_name_paragraph.drawOn(c, product_text_x, product_text_y)
 
-        # Draw price at the bottom
+        # Draw price
+        price_text_x = x + price_x_offset
+        price_text_y = y - price_y_offset
         c.setFont(price_font_type, price_font_size)
         c.drawCentredString(
-            x + label_width_pts / 2 + price_x_offset,
-            y - label_height_pts + 5 + price_y_offset,  # 5pts from bottom
+            price_text_x,
+            price_text_y,
             f"${float(price):.2f}"
         )
 
