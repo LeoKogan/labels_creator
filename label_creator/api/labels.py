@@ -254,18 +254,21 @@ def preview_label(label_type_config_json):
         for row in range(labels_per_column):
             for col in range(labels_per_row):
                 x = margin_left + (col * label_width)
-                y = page_height - margin_top - ((row + 1) * label_height)
+                # Calculate TOP-LEFT corner for draw_label (it draws downward from this point)
+                y_top = page_height - margin_top - (row * label_height)
+                # Calculate BOTTOM-LEFT corner for rect (ReportLab's rect uses bottom-left)
+                y_bottom = y_top - label_height
 
                 # Draw label border for debugging
                 c.setStrokeColorRGB(0.9, 0.9, 0.9)
-                c.rect(x, y, label_width, label_height)
+                c.rect(x, y_bottom, label_width, label_height)
 
                 # Draw the label
                 try:
                     draw_label(
                         c,
                         x,
-                        y,
+                        y_top,
                         sample_data['sku'],
                         sample_data['product'],
                         sample_data['display_price'],
