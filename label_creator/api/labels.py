@@ -215,19 +215,25 @@ def preview_label(label_type_config_json):
         }
 
         # Get page and label dimensions
-        page_width = config.get('page_width_inch', 8.5) * inch
-        page_height = config.get('page_height_inch', 11) * inch
-        label_width = config.get('label_width', 1) * inch
-        label_height = config.get('label_height', 1) * inch
+        page_width_inch = config.get('page_width_inch', 8.5)
+        page_height_inch = config.get('page_height_inch', 11)
+        label_width_inch = config.get('label_width', 1)
+        label_height_inch = config.get('label_height', 1)
         labels_per_row = config.get('labels_per_row', 3)
         labels_per_column = config.get('labels_per_column', 10)
+
+        # Convert to points for ReportLab canvas
+        page_width = page_width_inch * inch
+        page_height = page_height_inch * inch
+        label_width = label_width_inch * inch
+        label_height = label_height_inch * inch
 
         margin_top = config.get('margin_top', 0.5) * inch
         margin_bottom = config.get('margin_bottom', 0.5) * inch
         margin_left = config.get('margin_left', 0.1875) * inch
         margin_right = config.get('margin_right', 0.1875) * inch
 
-        frappe.log_error(f"Page: {page_width/inch}x{page_height/inch}, Label: {label_width/inch}x{label_height/inch}, Grid: {labels_per_row}x{labels_per_column}", "Label Preview Dimensions")
+        frappe.log_error(f"Page: {page_width_inch}x{page_height_inch}, Label: {label_width_inch}x{label_height_inch}, Grid: {labels_per_row}x{labels_per_column}", "Label Preview Dimensions")
 
         # Create a temporary directory for QR codes
         qr_dir = frappe.get_site_path('public', 'files', 'label_creator', 'qr_codes')
@@ -263,8 +269,8 @@ def preview_label(label_type_config_json):
                         sample_data['sku'],
                         sample_data['product'],
                         sample_data['display_price'],
-                        label_width,
-                        label_height,
+                        label_width_inch,
+                        label_height_inch,
                         config,
                         qr_dir
                     )
