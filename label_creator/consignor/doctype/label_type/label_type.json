@@ -24,19 +24,31 @@
   "margin_bottom",
   "margin_left",
   "margin_right",
-  "section_break_17",
+  "qr_code_settings_section",
   "qrcode_x_offset",
   "qrcode_y_offset",
   "qrcode_size_pts",
-  "column_break_21",
+  "sku_settings_section",
   "sku_x_offset",
   "sku_y_offset",
-  "section_break_24",
+  "column_break_sku",
+  "sku_font_type",
+  "sku_font_size",
+  "product_name_settings_section",
+  "show_product_name",
+  "product_name_x_offset",
+  "product_name_y_offset",
+  "column_break_product",
+  "product_name_font_type",
+  "product_name_font_size",
+  "price_tag_settings_section",
   "price_x_offset",
   "price_y_offset",
   "price_rotation",
-  "column_break_28",
-  "show_product_name",
+  "column_break_price",
+  "price_font_type",
+  "price_font_size",
+  "file_settings_section",
   "file_name"
  ],
  "fields": [
@@ -141,7 +153,7 @@
    "default": "0"
   },
   {
-   "fieldname": "section_break_17",
+   "fieldname": "qr_code_settings_section",
    "fieldtype": "Section Break",
    "label": "QR Code Settings"
   },
@@ -164,8 +176,9 @@
    "description": "Leave blank for auto-calculation"
   },
   {
-   "fieldname": "column_break_21",
-   "fieldtype": "Column Break"
+   "fieldname": "sku_settings_section",
+   "fieldtype": "Section Break",
+   "label": "SKU Settings"
   },
   {
    "fieldname": "sku_x_offset",
@@ -180,9 +193,65 @@
    "default": "0"
   },
   {
-   "fieldname": "section_break_24",
+   "fieldname": "column_break_sku",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sku_font_type",
+   "fieldtype": "Select",
+   "label": "SKU Font Type",
+   "options": "Helvetica\nHelvetica-Bold\nTimes-Roman\nTimes-Bold\nCourier\nCourier-Bold",
+   "default": "Helvetica"
+  },
+  {
+   "fieldname": "sku_font_size",
+   "fieldtype": "Int",
+   "label": "SKU Font Size (points)",
+   "default": "7"
+  },
+  {
+   "fieldname": "product_name_settings_section",
    "fieldtype": "Section Break",
-   "label": "Price & Display Settings"
+   "label": "Product Name Settings"
+  },
+  {
+   "fieldname": "show_product_name",
+   "fieldtype": "Check",
+   "label": "Show Product Name"
+  },
+  {
+   "fieldname": "product_name_x_offset",
+   "fieldtype": "Float",
+   "label": "Product Name X Offset (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "product_name_y_offset",
+   "fieldtype": "Float",
+   "label": "Product Name Y Offset (inches)",
+   "default": "0"
+  },
+  {
+   "fieldname": "column_break_product",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "product_name_font_type",
+   "fieldtype": "Select",
+   "label": "Product Name Font Type",
+   "options": "Helvetica\nHelvetica-Bold\nTimes-Roman\nTimes-Bold\nCourier\nCourier-Bold",
+   "default": "Helvetica"
+  },
+  {
+   "fieldname": "product_name_font_size",
+   "fieldtype": "Int",
+   "label": "Product Name Font Size (points)",
+   "default": "6"
+  },
+  {
+   "fieldname": "price_tag_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Price Tag Settings"
   },
   {
    "fieldname": "price_x_offset",
@@ -203,13 +272,26 @@
    "default": "0"
   },
   {
-   "fieldname": "column_break_28",
+   "fieldname": "column_break_price",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "show_product_name",
-   "fieldtype": "Check",
-   "label": "Show Product Name"
+   "fieldname": "price_font_type",
+   "fieldtype": "Select",
+   "label": "Price Font Type",
+   "options": "Helvetica\nHelvetica-Bold\nTimes-Roman\nTimes-Bold\nCourier\nCourier-Bold",
+   "default": "Helvetica-Bold"
+  },
+  {
+   "fieldname": "price_font_size",
+   "fieldtype": "Int",
+   "label": "Price Font Size (points)",
+   "default": "10"
+  },
+  {
+   "fieldname": "file_settings_section",
+   "fieldtype": "Section Break",
+   "label": "File Settings"
   },
   {
    "fieldname": "file_name",
