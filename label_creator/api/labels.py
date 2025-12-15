@@ -263,6 +263,14 @@ def preview_label(label_type_config_json):
                 c.setStrokeColorRGB(0.9, 0.9, 0.9)
                 c.rect(x, y_bottom, label_width, label_height)
 
+                # Log positioning details
+                frappe.log_error(
+                    f"Drawing label [{row},{col}] at x={x:.2f}, y_top={y_top:.2f}, y_bottom={y_bottom:.2f} | "
+                    f"Label size: {label_width_inch}x{label_height_inch} inches ({label_width:.2f}x{label_height:.2f} pts) | "
+                    f"Offsets: qr_y={config.get('qrcode_y_offset', 0)}, sku_y={config.get('sku_y_offset', 0)}, price_y={config.get('price_y_offset', 0)}",
+                    "Label Position Details"
+                )
+
                 # Draw the label
                 try:
                     draw_label(
@@ -298,8 +306,17 @@ def preview_label(label_type_config_json):
                 pdf_document = fitz.open(stream=pdf_data, filetype="pdf")
                 page = pdf_document[0]  # Get first page
 
-                # Render page to image (zoom factor 2 for better quality)
-                mat = fitz.Matrix(2, 2)
+                # Use higher zoom for small pages (< 3 inches in either dimension)
+                # to ensure labels are clearly visible
+                if page_width_inch < 3 or page_height_inch < 3:
+                    zoom_factor = 4
+                else:
+                    zoom_factor = 2
+
+                frappe.log_error(f"Using zoom factor: {zoom_factor} for page size {page_width_inch}x{page_height_inch}", "Label Preview Zoom")
+
+                # Render page to image
+                mat = fitz.Matrix(zoom_factor, zoom_factor)
                 pix = page.get_pixmap(matrix=mat)
 
                 # Convert to PNG
