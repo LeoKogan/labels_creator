@@ -153,32 +153,19 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
         )
 
         # Draw the SKU text
-        # User specifies position from left and top edges
+        # Position purely from offsets
         sku_text_x = x + sku_x_offset
         sku_text_y = y - sku_y_offset
-        styles = getSampleStyleSheet()
-        sku_style = styles["BodyText"]
-        sku_style.fontSize = sku_font_size
-        sku_style.leading = sku_font_size + 1
-        sku_style.alignment = 0  # left alignment
-        sku_style.fontName = sku_font_type
-        sku_paragraph = Paragraph(sku, sku_style)
-        sku_paragraph.wrap(label_width_pts - sku_x_offset, sku_font_size * 2)
-        sku_paragraph.drawOn(c, sku_text_x, sku_text_y)
+        c.setFont(sku_font_type, sku_font_size)
+        c.drawString(sku_text_x, sku_text_y, sku)
 
         # Draw product name if enabled
+        # Position purely from offsets
         if config.get("show_product_name", False):
             product_text_x = x + product_name_x_offset
             product_text_y = y - product_name_y_offset
-
-            product_style = styles["BodyText"]
-            product_style.fontSize = product_name_font_size
-            product_style.leading = product_name_font_size + 1
-            product_style.alignment = 0  # left alignment
-            product_style.fontName = product_name_font_type
-            product_paragraph = Paragraph(name, product_style)
-            product_paragraph.wrap(label_width_pts - product_name_x_offset, product_name_font_size * 3)
-            product_paragraph.drawOn(c, product_text_x, product_text_y)
+            c.setFont(product_name_font_type, product_name_font_size)
+            c.drawString(product_text_x, product_text_y, name)
 
         # Draw the price
         price_text = f"${float(price):.2f}"
@@ -190,13 +177,14 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
     else:
         # Portrait Layout
-        # Offsets are from: X = left edge, Y = top edge (positive Y goes down)
+        # Pure offset positioning: X from left edge, Y from top edge
+        # When offsets are 0, elements appear at top-left corner
 
         qr_size_pts = min(label_width_pts, label_height_pts * 0.4)
 
-        # Draw QR code (centered horizontally by default)
-        # QR is centered in the label width, then offset is applied
-        qr_x = x + (label_width_pts - qr_size_pts) / 2 + qr_x_offset
+        # Draw QR code
+        # Position purely from offsets (no automatic centering)
+        qr_x = x + qr_x_offset
         qr_y = y - qr_y_offset - qr_size_pts
         c.drawImage(
             qr_path,
@@ -208,44 +196,29 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
             mask='auto'
         )
 
-        # Draw SKU text (centered using Paragraph)
-        # For center-aligned Paragraph, x should be at left edge
-        sku_text_x = x
+        # Draw SKU text
+        # Position purely from offsets (no automatic centering)
+        sku_text_x = x + sku_x_offset
         sku_text_y = y - sku_y_offset
-        styles = getSampleStyleSheet()
-        sku_style = styles["BodyText"]
-        sku_style.fontSize = sku_font_size
-        sku_style.leading = sku_font_size + 1
-        sku_style.alignment = 1  # Center alignment
-        sku_style.fontName = sku_font_type
-        sku_paragraph = Paragraph(sku, sku_style)
-        sku_paragraph.wrap(label_width_pts, sku_font_size * 2)
-        sku_paragraph.drawOn(c, sku_text_x, sku_text_y)
 
-        # Draw product name if enabled (centered using Paragraph)
+        # Use canvas drawString for direct positioning (no Paragraph auto-centering)
+        c.setFont(sku_font_type, sku_font_size)
+        c.drawString(sku_text_x, sku_text_y, sku)
+
+        # Draw product name if enabled
+        # Position purely from offsets
         if config.get("show_product_name", False):
-            product_text_x = x
+            product_text_x = x + product_name_x_offset
             product_text_y = y - product_name_y_offset
+            c.setFont(product_name_font_type, product_name_font_size)
+            c.drawString(product_text_x, product_text_y, name)
 
-            product_style = styles["BodyText"]
-            product_style.fontSize = product_name_font_size
-            product_style.leading = product_name_font_size + 1
-            product_style.alignment = 1  # Center alignment
-            product_style.fontName = product_name_font_type
-            product_name_paragraph = Paragraph(name, product_style)
-            product_name_paragraph.wrap(label_width_pts, product_name_font_size * 3)
-            product_name_paragraph.drawOn(c, product_text_x, product_text_y)
-
-        # Draw price (centered using drawCentredString)
-        # For centered text, x should be at label center
-        price_text_x = x + (label_width_pts / 2) + price_x_offset
+        # Draw price
+        # Position purely from offsets (no automatic centering)
+        price_text_x = x + price_x_offset
         price_text_y = y - price_y_offset
         c.setFont(price_font_type, price_font_size)
-        c.drawCentredString(
-            price_text_x,
-            price_text_y,
-            f"${float(price):.2f}"
-        )
+        c.drawString(price_text_x, price_text_y, f"${float(price):.2f}")
 
 
 def create_labels_pdf(labels_data, label_type):
