@@ -205,7 +205,6 @@ def preview_label(label_type_config_json):
 
         # Parse the configuration
         config = json.loads(label_type_config_json)
-        frappe.log_error(f"Config: {json.dumps(config, indent=2)}", "Label Preview Config")
 
         # Sample data for preview
         sample_data = {
@@ -233,8 +232,6 @@ def preview_label(label_type_config_json):
         margin_left = config.get('margin_left', 0.1875) * inch
         margin_right = config.get('margin_right', 0.1875) * inch
 
-        frappe.log_error(f"Page: {page_width_inch}x{page_height_inch}, Label: {label_width_inch}x{label_height_inch}, Grid: {labels_per_row}x{labels_per_column}", "Label Preview Dimensions")
-
         # Create a temporary directory for QR codes
         qr_dir = frappe.get_site_path('public', 'files', 'label_creator', 'qr_codes')
         os.makedirs(qr_dir, exist_ok=True)
@@ -259,18 +256,6 @@ def preview_label(label_type_config_json):
                 # Calculate BOTTOM-LEFT corner for rect (ReportLab's rect uses bottom-left)
                 y_bottom = y_top - label_height
 
-                # Draw label border for debugging
-                c.setStrokeColorRGB(0.9, 0.9, 0.9)
-                c.rect(x, y_bottom, label_width, label_height)
-
-                # Log positioning details
-                frappe.log_error(
-                    f"Drawing label [{row},{col}] at x={x:.2f}, y_top={y_top:.2f}, y_bottom={y_bottom:.2f} | "
-                    f"Label size: {label_width_inch}x{label_height_inch} inches ({label_width:.2f}x{label_height:.2f} pts) | "
-                    f"Offsets: qr_y={config.get('qrcode_y_offset', 0)}, sku_y={config.get('sku_y_offset', 0)}, price_y={config.get('price_y_offset', 0)}",
-                    "Label Position Details"
-                )
-
                 # Draw the label
                 try:
                     draw_label(
@@ -289,15 +274,11 @@ def preview_label(label_type_config_json):
                 except Exception as label_error:
                     frappe.log_error(f"Error drawing label at row {row}, col {col}: {str(label_error)}\n{frappe.get_traceback()}", "Label Draw Error")
 
-        frappe.log_error(f"Drew {labels_drawn} labels", "Label Preview Stats")
-
         c.save()
 
         # Get the PDF data
         pdf_data = buffer.getvalue()
         buffer.close()
-
-        frappe.log_error(f"PDF size: {len(pdf_data)} bytes", "Label Preview PDF")
 
         # Convert PDF to image if PyMuPDF is available
         if has_pymupdf:
@@ -313,8 +294,6 @@ def preview_label(label_type_config_json):
                 else:
                     zoom_factor = 2
 
-                frappe.log_error(f"Using zoom factor: {zoom_factor} for page size {page_width_inch}x{page_height_inch}", "Label Preview Zoom")
-
                 # Render page to image
                 mat = fitz.Matrix(zoom_factor, zoom_factor)
                 pix = page.get_pixmap(matrix=mat)
@@ -322,8 +301,6 @@ def preview_label(label_type_config_json):
                 # Convert to PNG
                 img_data = pix.tobytes("png")
                 pdf_document.close()
-
-                frappe.log_error(f"Image size: {len(img_data)} bytes", "Label Preview Image")
 
                 # Convert to base64
                 img_base64 = base64.b64encode(img_data).decode('utf-8')
