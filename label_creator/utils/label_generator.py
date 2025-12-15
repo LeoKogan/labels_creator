@@ -194,10 +194,9 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
         qr_size_pts = min(label_width_pts, label_height_pts * 0.4)
 
-        # Draw QR code
-        # Position from left edge + offset, and from top edge - offset
-        # (subtract qr_size_pts because drawImage uses bottom-left corner)
-        qr_x = x + qr_x_offset
+        # Draw QR code (centered horizontally by default)
+        # QR is centered in the label width, then offset is applied
+        qr_x = x + (label_width_pts - qr_size_pts) / 2 + qr_x_offset
         qr_y = y - qr_y_offset - qr_size_pts
         c.drawImage(
             qr_path,
@@ -209,9 +208,9 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
             mask='auto'
         )
 
-        # Draw SKU text
-        # User specifies position from left and top edges
-        sku_text_x = x + sku_x_offset
+        # Draw SKU text (centered using Paragraph)
+        # For center-aligned Paragraph, x should be at left edge
+        sku_text_x = x
         sku_text_y = y - sku_y_offset
         styles = getSampleStyleSheet()
         sku_style = styles["BodyText"]
@@ -220,13 +219,12 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
         sku_style.alignment = 1  # Center alignment
         sku_style.fontName = sku_font_type
         sku_paragraph = Paragraph(sku, sku_style)
-        sku_width = label_width_pts
-        sku_paragraph.wrap(sku_width, sku_font_size * 2)
+        sku_paragraph.wrap(label_width_pts, sku_font_size * 2)
         sku_paragraph.drawOn(c, sku_text_x, sku_text_y)
 
-        # Draw product name if enabled
+        # Draw product name if enabled (centered using Paragraph)
         if config.get("show_product_name", False):
-            product_text_x = x + product_name_x_offset
+            product_text_x = x
             product_text_y = y - product_name_y_offset
 
             product_style = styles["BodyText"]
@@ -235,12 +233,12 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
             product_style.alignment = 1  # Center alignment
             product_style.fontName = product_name_font_type
             product_name_paragraph = Paragraph(name, product_style)
-            product_name_width = label_width_pts
-            product_name_paragraph.wrap(product_name_width, product_name_font_size * 3)
+            product_name_paragraph.wrap(label_width_pts, product_name_font_size * 3)
             product_name_paragraph.drawOn(c, product_text_x, product_text_y)
 
-        # Draw price
-        price_text_x = x + price_x_offset
+        # Draw price (centered using drawCentredString)
+        # For centered text, x should be at label center
+        price_text_x = x + (label_width_pts / 2) + price_x_offset
         price_text_y = y - price_y_offset
         c.setFont(price_font_type, price_font_size)
         c.drawCentredString(
