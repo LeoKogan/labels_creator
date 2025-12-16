@@ -73,6 +73,35 @@ def get_or_create_qr(sku, qr_dir):
     return qr_path
 
 
+def wrap_text(c, text, font_name, font_size, max_width_pts):
+    """
+    Wrap text to fit within max_width_pts.
+    Returns a list of text lines.
+    """
+    words = text.split()
+    lines = []
+    current_line = ""
+
+    for word in words:
+        test_line = current_line + (" " if current_line else "") + word
+        test_width = c.stringWidth(test_line, font_name, font_size)
+
+        if test_width <= max_width_pts:
+            current_line = test_line
+        else:
+            if current_line:
+                lines.append(current_line)
+                current_line = word
+            else:
+                # Single word is too long, add it anyway
+                lines.append(word)
+
+    if current_line:
+        lines.append(current_line)
+
+    return lines if lines else [text]
+
+
 def draw_rotated_text(c, text, center_x, center_y, angle, font_name="Helvetica-Bold", font_size=8):
     """
     Draw rotated text centered around (center_x, center_y).
@@ -152,19 +181,31 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
             mask='auto'
         )
 
-        # Draw the SKU text
-        # Y offset represents where the TOP of text should appear
+        # Draw the SKU text with wrapping
+        # Calculate available width (label width minus x offset and some margin)
+        available_width = label_width_pts - sku_x_offset - 5  # 5pt margin
+        sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width)
+
         sku_text_x = x + sku_x_offset
         sku_text_y = y - sku_y_offset - sku_font_size
         c.setFont(sku_font_type, sku_font_size)
-        c.drawString(sku_text_x, sku_text_y, sku)
 
-        # Draw product name if enabled
+        for i, line in enumerate(sku_lines):
+            line_y = sku_text_y - (i * sku_font_size * 1.2)  # 1.2 = line spacing
+            c.drawString(sku_text_x, line_y, line)
+
+        # Draw product name if enabled with wrapping
         if config.get("show_product_name", False):
+            available_width = label_width_pts - product_name_x_offset - 5
+            product_lines = wrap_text(c, name, product_name_font_type, product_name_font_size, available_width)
+
             product_text_x = x + product_name_x_offset
             product_text_y = y - product_name_y_offset - product_name_font_size
             c.setFont(product_name_font_type, product_name_font_size)
-            c.drawString(product_text_x, product_text_y, name)
+
+            for i, line in enumerate(product_lines):
+                line_y = product_text_y - (i * product_name_font_size * 1.2)
+                c.drawString(product_text_x, line_y, line)
 
         # Draw the price
         price_text = f"${float(price):.2f}"
@@ -195,20 +236,31 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
             mask='auto'
         )
 
-        # Draw SKU text
-        # Y offset represents where the TOP of text should appear
-        # Adjust by font size since drawString uses baseline
+        # Draw SKU text with wrapping
+        # Calculate available width (label width minus x offset and some margin)
+        available_width = label_width_pts - sku_x_offset - 5  # 5pt margin
+        sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width)
+
         sku_text_x = x + sku_x_offset
         sku_text_y = y - sku_y_offset - sku_font_size
         c.setFont(sku_font_type, sku_font_size)
-        c.drawString(sku_text_x, sku_text_y, sku)
 
-        # Draw product name if enabled
+        for i, line in enumerate(sku_lines):
+            line_y = sku_text_y - (i * sku_font_size * 1.2)  # 1.2 = line spacing
+            c.drawString(sku_text_x, line_y, line)
+
+        # Draw product name if enabled with wrapping
         if config.get("show_product_name", False):
+            available_width = label_width_pts - product_name_x_offset - 5
+            product_lines = wrap_text(c, name, product_name_font_type, product_name_font_size, available_width)
+
             product_text_x = x + product_name_x_offset
             product_text_y = y - product_name_y_offset - product_name_font_size
             c.setFont(product_name_font_type, product_name_font_size)
-            c.drawString(product_text_x, product_text_y, name)
+
+            for i, line in enumerate(product_lines):
+                line_y = product_text_y - (i * product_name_font_size * 1.2)
+                c.drawString(product_text_x, line_y, line)
 
         # Draw price
         price_text_x = x + price_x_offset

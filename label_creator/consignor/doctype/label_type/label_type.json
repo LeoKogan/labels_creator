@@ -9,6 +9,8 @@
  "field_order": [
   "label_type_name",
   "display_name",
+  "offset_input_mode_section",
+  "offset_input_mode",
   "section_break_3",
   "label_width",
   "label_height",
@@ -26,24 +28,32 @@
   "margin_right",
   "qr_code_settings_section",
   "qrcode_x_offset",
+  "qrcode_x_offset_pct",
   "qrcode_y_offset",
+  "qrcode_y_offset_pct",
   "qrcode_size_pts",
   "sku_settings_section",
   "sku_x_offset",
+  "sku_x_offset_pct",
   "sku_y_offset",
+  "sku_y_offset_pct",
   "column_break_sku",
   "sku_font_type",
   "sku_font_size",
   "product_name_settings_section",
   "show_product_name",
   "product_name_x_offset",
+  "product_name_x_offset_pct",
   "product_name_y_offset",
+  "product_name_y_offset_pct",
   "column_break_product",
   "product_name_font_type",
   "product_name_font_size",
   "price_tag_settings_section",
   "price_x_offset",
+  "price_x_offset_pct",
   "price_y_offset",
+  "price_y_offset_pct",
   "price_rotation",
   "column_break_price",
   "price_font_type",
@@ -66,6 +76,19 @@
    "in_list_view": 1,
    "label": "Display Name",
    "reqd": 1
+  },
+  {
+   "fieldname": "offset_input_mode_section",
+   "fieldtype": "Section Break",
+   "label": "Offset Input Mode"
+  },
+  {
+   "fieldname": "offset_input_mode",
+   "fieldtype": "Select",
+   "label": "Offset Input Mode",
+   "options": "Inches\nPercentage",
+   "default": "Inches",
+   "description": "Choose whether to input offsets in inches or as percentage of label size"
   },
   {
    "fieldname": "section_break_3",
@@ -164,10 +187,24 @@
    "default": "0"
   },
   {
+   "fieldname": "qrcode_x_offset_pct",
+   "fieldtype": "Float",
+   "label": "QR Code X Offset (%)",
+   "default": "0",
+   "read_only": 1
+  },
+  {
    "fieldname": "qrcode_y_offset",
    "fieldtype": "Float",
    "label": "QR Code Y Offset (inches)",
    "default": "0"
+  },
+  {
+   "fieldname": "qrcode_y_offset_pct",
+   "fieldtype": "Float",
+   "label": "QR Code Y Offset (%)",
+   "default": "0",
+   "read_only": 1
   },
   {
    "fieldname": "qrcode_size_pts",
@@ -187,10 +224,24 @@
    "default": "0"
   },
   {
+   "fieldname": "sku_x_offset_pct",
+   "fieldtype": "Float",
+   "label": "SKU X Offset (%)",
+   "default": "0",
+   "read_only": 1
+  },
+  {
    "fieldname": "sku_y_offset",
    "fieldtype": "Float",
    "label": "SKU Y Offset (inches)",
    "default": "0"
+  },
+  {
+   "fieldname": "sku_y_offset_pct",
+   "fieldtype": "Float",
+   "label": "SKU Y Offset (%)",
+   "default": "0",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_sku",
@@ -226,10 +277,24 @@
    "default": "0"
   },
   {
+   "fieldname": "product_name_x_offset_pct",
+   "fieldtype": "Float",
+   "label": "Product Name X Offset (%)",
+   "default": "0",
+   "read_only": 1
+  },
+  {
    "fieldname": "product_name_y_offset",
    "fieldtype": "Float",
    "label": "Product Name Y Offset (inches)",
    "default": "0"
+  },
+  {
+   "fieldname": "product_name_y_offset_pct",
+   "fieldtype": "Float",
+   "label": "Product Name Y Offset (%)",
+   "default": "0",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_product",
@@ -260,10 +325,24 @@
    "default": "0"
   },
   {
+   "fieldname": "price_x_offset_pct",
+   "fieldtype": "Float",
+   "label": "Price X Offset (%)",
+   "default": "0",
+   "read_only": 1
+  },
+  {
    "fieldname": "price_y_offset",
    "fieldtype": "Float",
    "label": "Price Y Offset (inches)",
    "default": "0"
+  },
+  {
+   "fieldname": "price_y_offset_pct",
+   "fieldtype": "Float",
+   "label": "Price Y Offset (%)",
+   "default": "0",
+   "read_only": 1
   },
   {
    "fieldname": "price_rotation",

@@ -9,8 +9,183 @@ frappe.ui.form.on('Label Type', {
 				preview_label(frm);
 			});
 		}
+		// Set initial field states based on offset mode
+		toggle_offset_fields(frm);
+	},
+
+	offset_input_mode: function(frm) {
+		toggle_offset_fields(frm);
+	},
+
+	label_width: function(frm) {
+		// Recalculate X offset percentages when label width changes
+		if (frm.doc.offset_input_mode === 'Inches') {
+			update_percentage_from_inches(frm, 'qrcode_x_offset', 'qrcode_x_offset_pct', 'label_width');
+			update_percentage_from_inches(frm, 'sku_x_offset', 'sku_x_offset_pct', 'label_width');
+			update_percentage_from_inches(frm, 'product_name_x_offset', 'product_name_x_offset_pct', 'label_width');
+			update_percentage_from_inches(frm, 'price_x_offset', 'price_x_offset_pct', 'label_width');
+		}
+	},
+
+	label_height: function(frm) {
+		// Recalculate Y offset percentages when label height changes
+		if (frm.doc.offset_input_mode === 'Inches') {
+			update_percentage_from_inches(frm, 'qrcode_y_offset', 'qrcode_y_offset_pct', 'label_height');
+			update_percentage_from_inches(frm, 'sku_y_offset', 'sku_y_offset_pct', 'label_height');
+			update_percentage_from_inches(frm, 'product_name_y_offset', 'product_name_y_offset_pct', 'label_height');
+			update_percentage_from_inches(frm, 'price_y_offset', 'price_y_offset_pct', 'label_height');
+		}
+	},
+
+	// QR Code X Offset
+	qrcode_x_offset: function(frm) {
+		if (frm.doc.offset_input_mode === 'Inches') {
+			update_percentage_from_inches(frm, 'qrcode_x_offset', 'qrcode_x_offset_pct', 'label_width');
+		}
+	},
+	qrcode_x_offset_pct: function(frm) {
+		if (frm.doc.offset_input_mode === 'Percentage') {
+			update_inches_from_percentage(frm, 'qrcode_x_offset_pct', 'qrcode_x_offset', 'label_width');
+		}
+	},
+
+	// QR Code Y Offset
+	qrcode_y_offset: function(frm) {
+		if (frm.doc.offset_input_mode === 'Inches') {
+			update_percentage_from_inches(frm, 'qrcode_y_offset', 'qrcode_y_offset_pct', 'label_height');
+		}
+	},
+	qrcode_y_offset_pct: function(frm) {
+		if (frm.doc.offset_input_mode === 'Percentage') {
+			update_inches_from_percentage(frm, 'qrcode_y_offset_pct', 'qrcode_y_offset', 'label_height');
+		}
+	},
+
+	// SKU X Offset
+	sku_x_offset: function(frm) {
+		if (frm.doc.offset_input_mode === 'Inches') {
+			update_percentage_from_inches(frm, 'sku_x_offset', 'sku_x_offset_pct', 'label_width');
+		}
+	},
+	sku_x_offset_pct: function(frm) {
+		if (frm.doc.offset_input_mode === 'Percentage') {
+			update_inches_from_percentage(frm, 'sku_x_offset_pct', 'sku_x_offset', 'label_width');
+		}
+	},
+
+	// SKU Y Offset
+	sku_y_offset: function(frm) {
+		if (frm.doc.offset_input_mode === 'Inches') {
+			update_percentage_from_inches(frm, 'sku_y_offset', 'sku_y_offset_pct', 'label_height');
+		}
+	},
+	sku_y_offset_pct: function(frm) {
+		if (frm.doc.offset_input_mode === 'Percentage') {
+			update_inches_from_percentage(frm, 'sku_y_offset_pct', 'sku_y_offset', 'label_height');
+		}
+	},
+
+	// Product Name X Offset
+	product_name_x_offset: function(frm) {
+		if (frm.doc.offset_input_mode === 'Inches') {
+			update_percentage_from_inches(frm, 'product_name_x_offset', 'product_name_x_offset_pct', 'label_width');
+		}
+	},
+	product_name_x_offset_pct: function(frm) {
+		if (frm.doc.offset_input_mode === 'Percentage') {
+			update_inches_from_percentage(frm, 'product_name_x_offset_pct', 'product_name_x_offset', 'label_width');
+		}
+	},
+
+	// Product Name Y Offset
+	product_name_y_offset: function(frm) {
+		if (frm.doc.offset_input_mode === 'Inches') {
+			update_percentage_from_inches(frm, 'product_name_y_offset', 'product_name_y_offset_pct', 'label_height');
+		}
+	},
+	product_name_y_offset_pct: function(frm) {
+		if (frm.doc.offset_input_mode === 'Percentage') {
+			update_inches_from_percentage(frm, 'product_name_y_offset_pct', 'product_name_y_offset', 'label_height');
+		}
+	},
+
+	// Price X Offset
+	price_x_offset: function(frm) {
+		if (frm.doc.offset_input_mode === 'Inches') {
+			update_percentage_from_inches(frm, 'price_x_offset', 'price_x_offset_pct', 'label_width');
+		}
+	},
+	price_x_offset_pct: function(frm) {
+		if (frm.doc.offset_input_mode === 'Percentage') {
+			update_inches_from_percentage(frm, 'price_x_offset_pct', 'price_x_offset', 'label_width');
+		}
+	},
+
+	// Price Y Offset
+	price_y_offset: function(frm) {
+		if (frm.doc.offset_input_mode === 'Inches') {
+			update_percentage_from_inches(frm, 'price_y_offset', 'price_y_offset_pct', 'label_height');
+		}
+	},
+	price_y_offset_pct: function(frm) {
+		if (frm.doc.offset_input_mode === 'Percentage') {
+			update_inches_from_percentage(frm, 'price_y_offset_pct', 'price_y_offset', 'label_height');
+		}
 	}
 });
+
+function toggle_offset_fields(frm) {
+	const mode = frm.doc.offset_input_mode || 'Inches';
+	const offset_fields = [
+		'qrcode_x_offset', 'qrcode_y_offset',
+		'sku_x_offset', 'sku_y_offset',
+		'product_name_x_offset', 'product_name_y_offset',
+		'price_x_offset', 'price_y_offset'
+	];
+	const pct_fields = [
+		'qrcode_x_offset_pct', 'qrcode_y_offset_pct',
+		'sku_x_offset_pct', 'sku_y_offset_pct',
+		'product_name_x_offset_pct', 'product_name_y_offset_pct',
+		'price_x_offset_pct', 'price_y_offset_pct'
+	];
+
+	if (mode === 'Inches') {
+		// Enable inch fields, disable percentage fields
+		offset_fields.forEach(field => {
+			frm.set_df_property(field, 'read_only', 0);
+		});
+		pct_fields.forEach(field => {
+			frm.set_df_property(field, 'read_only', 1);
+		});
+	} else {
+		// Enable percentage fields, disable inch fields
+		offset_fields.forEach(field => {
+			frm.set_df_property(field, 'read_only', 1);
+		});
+		pct_fields.forEach(field => {
+			frm.set_df_property(field, 'read_only', 0);
+		});
+	}
+	frm.refresh_fields();
+}
+
+function update_percentage_from_inches(frm, inch_field, pct_field, dimension_field) {
+	const inch_value = frm.doc[inch_field] || 0;
+	const dimension = frm.doc[dimension_field] || 1;
+
+	if (dimension > 0) {
+		const pct_value = (inch_value / dimension) * 100;
+		frm.set_value(pct_field, parseFloat(pct_value.toFixed(2)));
+	}
+}
+
+function update_inches_from_percentage(frm, pct_field, inch_field, dimension_field) {
+	const pct_value = frm.doc[pct_field] || 0;
+	const dimension = frm.doc[dimension_field] || 1;
+
+	const inch_value = (pct_value / 100) * dimension;
+	frm.set_value(inch_field, parseFloat(inch_value.toFixed(4)));
+}
 
 function preview_label(frm) {
 	// Collect current form values for preview
