@@ -256,6 +256,11 @@ def preview_label(label_type_config_json):
                 # Calculate BOTTOM-LEFT corner for rect (ReportLab's rect uses bottom-left)
                 y_bottom = y_top - label_height
 
+                # Draw label border for visual reference
+                c.setStrokeColorRGB(0.7, 0.7, 0.7)  # Gray border
+                c.setLineWidth(0.5)
+                c.rect(x, y_bottom, label_width, label_height, stroke=1, fill=0)
+
                 # Draw the label
                 try:
                     draw_label(
