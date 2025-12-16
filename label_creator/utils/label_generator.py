@@ -153,17 +153,16 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
         )
 
         # Draw the SKU text
-        # Position purely from offsets
+        # Y offset represents where the TOP of text should appear
         sku_text_x = x + sku_x_offset
-        sku_text_y = y - sku_y_offset
+        sku_text_y = y - sku_y_offset - sku_font_size
         c.setFont(sku_font_type, sku_font_size)
         c.drawString(sku_text_x, sku_text_y, sku)
 
         # Draw product name if enabled
-        # Position purely from offsets
         if config.get("show_product_name", False):
             product_text_x = x + product_name_x_offset
-            product_text_y = y - product_name_y_offset
+            product_text_y = y - product_name_y_offset - product_name_font_size
             c.setFont(product_name_font_type, product_name_font_size)
             c.drawString(product_text_x, product_text_y, name)
 
@@ -197,26 +196,23 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
         )
 
         # Draw SKU text
-        # Position purely from offsets (no automatic centering)
+        # Y offset represents where the TOP of text should appear
+        # Adjust by font size since drawString uses baseline
         sku_text_x = x + sku_x_offset
-        sku_text_y = y - sku_y_offset
-
-        # Use canvas drawString for direct positioning (no Paragraph auto-centering)
+        sku_text_y = y - sku_y_offset - sku_font_size
         c.setFont(sku_font_type, sku_font_size)
         c.drawString(sku_text_x, sku_text_y, sku)
 
         # Draw product name if enabled
-        # Position purely from offsets
         if config.get("show_product_name", False):
             product_text_x = x + product_name_x_offset
-            product_text_y = y - product_name_y_offset
+            product_text_y = y - product_name_y_offset - product_name_font_size
             c.setFont(product_name_font_type, product_name_font_size)
             c.drawString(product_text_x, product_text_y, name)
 
         # Draw price
-        # Position purely from offsets (no automatic centering)
         price_text_x = x + price_x_offset
-        price_text_y = y - price_y_offset
+        price_text_y = y - price_y_offset - price_font_size
         c.setFont(price_font_type, price_font_size)
         c.drawString(price_text_x, price_text_y, f"${float(price):.2f}")
 
