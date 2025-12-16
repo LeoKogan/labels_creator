@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"TgJElP1bSH\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Label Designer</span>\",\"col\":12}},{\"id\":\"jdZ1234abc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Type\",\"col\":3}},{\"id\":\"xyz9876def\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Creator\",\"col\":3}},{\"id\":\"abc1111ghi\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">Reports & Masters</span>\",\"col\":12}},{\"id\":\"def2222jkl\",\"type\":\"card\",\"data\":{\"card_name\":\"Label Types\",\"col\":4}}]",
+ "content": "[{\"id\":\"TgJElP1bSH\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Label Creator</span>\",\"col\":12}},{\"id\":\"jdZ1234abc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Type\",\"col\":3}},{\"id\":\"xyz9876def\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Creator\",\"col\":3}},{\"id\":\"abc1111ghi\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">Reports & Masters</span>\",\"col\":12}},{\"id\":\"def2222jkl\",\"type\":\"card\",\"data\":{\"card_name\":\"Label Types\",\"col\":4}}]",
  "creation": "2025-01-14 12:00:00.000000",
  "docstatus": 0,
  "doctype": "Workspace",
@@ -9,7 +9,7 @@
  "icon": "tag",
  "idx": 0,
  "is_hidden": 0,
- "label": "Label Designer",
+ "label": "Label Creator",
  "links": [
   {
    "hidden": 0,
@@ -34,8 +34,8 @@
  ],
  "modified": "2025-01-14 12:00:00.000000",
  "modified_by": "Administrator",
- "module": "Label Designer",
- "name": "Label Designer",
+ "module": "Label Creator",
+ "name": "Label Creator",
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
@@ -58,5 +58,5 @@
    "type": "Page"
   }
  ],
- "title": "Label Designer"
+ "title": "Label Creator"
 }
