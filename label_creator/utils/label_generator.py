@@ -80,24 +80,54 @@ def wrap_text(c, text, font_name, font_size, max_width_pts):
     """
     Wrap text to fit within max_width_pts.
     Returns a list of text lines.
+    Handles breaking on both spaces and hyphens.
     """
+    import re
+
+    # Split on spaces first
     words = text.split()
     lines = []
     current_line = ""
 
     for word in words:
+        # Check if we can fit the whole word
         test_line = current_line + (" " if current_line else "") + word
         test_width = c.stringWidth(test_line, font_name, font_size)
 
         if test_width <= max_width_pts:
             current_line = test_line
         else:
-            if current_line:
-                lines.append(current_line)
-                current_line = word
+            # Word doesn't fit, try breaking on hyphens
+            if '-' in word:
+                # Split "ABC-DEF-GHI" into ["ABC-", "DEF-", "GHI"]
+                # This way hyphens stay with the preceding part for readability
+                parts = word.split('-')
+                # Add hyphen back to all parts except the last
+                hyphen_parts = [p + '-' for p in parts[:-1]] + [parts[-1]]
+
+                for part in hyphen_parts:
+                    test_line = current_line + (" " if current_line else "") + part
+                    test_width = c.stringWidth(test_line, font_name, font_size)
+
+                    if test_width <= max_width_pts:
+                        current_line = test_line
+                    else:
+                        if current_line:
+                            lines.append(current_line)
+                            current_line = part
+                        else:
+                            # Even a single part is too long, add it anyway
+                            lines.append(part)
+                            current_line = ""
             else:
-                # Single word is too long, add it anyway
-                lines.append(word)
+                # No hyphens, add current line and start new one
+                if current_line:
+                    lines.append(current_line)
+                    current_line = word
+                else:
+                    # Single word is too long, add it anyway
+                    lines.append(word)
+                    current_line = ""
 
     if current_line:
         lines.append(current_line)
