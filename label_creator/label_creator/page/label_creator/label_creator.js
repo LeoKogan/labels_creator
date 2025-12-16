@@ -151,6 +151,13 @@ frappe.pages['label-creator'].on_page_load = function(wrapper) {
 		.input-group > .form-control {
 			border-radius: 3px !important;
 		}
+		/* SKU column word wrapping */
+		#previewTable tbody td:nth-child(2) {
+			word-break: break-word;
+			overflow-wrap: break-word;
+			hyphens: auto;
+			max-width: 200px;
+		}
 		</style>
 	`);
 
