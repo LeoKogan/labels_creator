@@ -1,7 +1,7 @@
 from . import __version__ as app_version
 
 app_name = "label_creator"
-app_title = "Label Designer"
+app_title = "Label Creator"
 app_publisher = "Your Company"
 app_description = "Design professional product labels with QR codes for ERPNext"
 app_email = "info@yourcompany.com"
@@ -12,7 +12,7 @@ app_license = "MIT"
 
 # Add to website context
 website_context = {
-    "brand_html": "Label Designer"
+    "brand_html": "Label Creator"
 }
 
 # Add custom route to website sidebar
@@ -93,7 +93,7 @@ fixtures = [
 	{
 		"dt": "Workspace",
 		"filters": [
-			["name", "=", "Label Designer"]
+			["name", "=", "Label Creator"]
 		]
 	}
 ]
