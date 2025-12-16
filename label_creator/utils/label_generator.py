@@ -187,8 +187,8 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
         # Draw the SKU text with wrapping if enabled
         if config.get("show_sku", True):
-            # Calculate available width (label width minus x offset and some margin)
-            available_width = label_width_pts - sku_x_offset - 5  # 5pt margin
+            # Calculate available width (label width minus x offset and right margin)
+            available_width = label_width_pts - sku_x_offset - 10  # 10pt right margin
             sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width)
 
             sku_text_x = x + sku_x_offset
@@ -201,7 +201,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
         # Draw product name if enabled with wrapping
         if config.get("show_product_name", False):
-            available_width = label_width_pts - product_name_x_offset - 5
+            available_width = label_width_pts - product_name_x_offset - 10  # 10pt right margin
             product_lines = wrap_text(c, name, product_name_font_type, product_name_font_size, available_width)
 
             product_text_x = x + product_name_x_offset
@@ -245,8 +245,8 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
         # Draw SKU text with wrapping if enabled
         if config.get("show_sku", True):
-            # Calculate available width (label width minus x offset and some margin)
-            available_width = label_width_pts - sku_x_offset - 5  # 5pt margin
+            # Calculate available width (label width minus x offset and right margin)
+            available_width = label_width_pts - sku_x_offset - 10  # 10pt right margin
             sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width)
 
             sku_text_x = x + sku_x_offset
@@ -259,7 +259,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
         # Draw product name if enabled with wrapping
         if config.get("show_product_name", False):
-            available_width = label_width_pts - product_name_x_offset - 5
+            available_width = label_width_pts - product_name_x_offset - 10  # 10pt right margin
             product_lines = wrap_text(c, name, product_name_font_type, product_name_font_size, available_width)
 
             product_text_x = x + product_name_x_offset

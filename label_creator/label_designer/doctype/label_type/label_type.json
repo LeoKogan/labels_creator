@@ -8,9 +8,11 @@
  "engine": "InnoDB",
  "field_order": [
   "label_type_name",
-  "display_name",
   "offset_input_mode",
   "basic_settings_tab",
+  "details_section",
+  "display_name",
+  "label_setup_section",
   "label_width",
   "label_height",
   "label_orientation",
@@ -73,13 +75,6 @@
    "unique": 1
   },
   {
-   "fieldname": "display_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Display Name",
-   "reqd": 1
-  },
-  {
    "fieldname": "offset_input_mode",
    "fieldtype": "Select",
    "label": "Offset Input Mode",
@@ -91,6 +86,23 @@
    "fieldname": "basic_settings_tab",
    "fieldtype": "Tab Break",
    "label": "Basic Settings"
+  },
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "display_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Display Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "label_setup_section",
+   "fieldtype": "Section Break",
+   "label": "Label Setup"
   },
   {
    "fieldname": "label_width",
