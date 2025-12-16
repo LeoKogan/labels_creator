@@ -62,10 +62,13 @@ frappe.pages['label-creator'].on_page_load = function(wrapper) {
 								<table class="table table-striped" id="previewTable">
 									<thead>
 										<tr>
+											<th style="width: 50px;">
+												<input type="checkbox" id="selectAll" checked>
+											</th>
 											<th>SKU</th>
 											<th>Product</th>
-											<th>Price</th>
-											<th>Quantity</th>
+											<th style="width: 150px;">Price</th>
+											<th style="width: 120px;">Quantity</th>
 										</tr>
 									</thead>
 									<tbody id="previewTableBody">
@@ -124,6 +127,29 @@ frappe.pages['label-creator'].on_page_load = function(wrapper) {
 		.card {
 			box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 			border: 1px solid #e8e9ea;
+		}
+		/* Editable input styling */
+		.price-input, .quantity-input {
+			background-color: white !important;
+			border: 1px solid black !important;
+			border-radius: 3px;
+			padding: 4px 8px;
+		}
+		/* Make $ symbol blend with the row */
+		.input-group-text {
+			background-color: transparent !important;
+			border: none !important;
+			padding-left: 0;
+			padding-right: 4px;
+			color: inherit;
+		}
+		.input-group {
+			border: none !important;
+			background: transparent !important;
+		}
+		/* Remove Bootstrap's input-group borders */
+		.input-group > .form-control {
+			border-radius: 3px !important;
 		}
 		</style>
 	`);
@@ -220,19 +246,58 @@ frappe.pages['label-creator'].on_page_load = function(wrapper) {
 		const tbody = page.main.find('#previewTableBody');
 		tbody.empty();
 
-		content.forEach(item => {
-			tbody.append(`
-				<tr>
+		content.forEach((item, index) => {
+			const row = $(`
+				<tr data-index="${index}">
+					<td>
+						<input type="checkbox" class="item-checkbox" data-index="${index}" checked>
+					</td>
 					<td>${item.sku}</td>
 					<td>${item.product}</td>
-					<td>$${parseFloat(item.display_price).toFixed(2)}</td>
-					<td>${item.quantity}</td>
+					<td>
+						<div class="input-group input-group-sm">
+							<span class="input-group-text">$</span>
+							<input type="number" class="form-control price-input" data-index="${index}"
+								value="${parseFloat(item.display_price).toFixed(2)}"
+								step="0.01" min="0" style="max-width: 100px;">
+						</div>
+					</td>
+					<td>
+						<input type="number" class="form-control form-control-sm quantity-input" data-index="${index}"
+							value="${item.quantity}" min="1" style="max-width: 80px;">
+					</td>
 				</tr>
 			`);
+			tbody.append(row);
+		});
+
+		// Update total when checkboxes or quantities change
+		updateTotalLabels();
+
+		// Add event listeners
+		page.main.find('.item-checkbox').on('change', updateTotalLabels);
+		page.main.find('.quantity-input').on('input', updateTotalLabels);
+
+		// Select/deselect all checkbox
+		const selectAllCheckbox = page.main.find('#selectAll');
+		selectAllCheckbox.prop('checked', true);
+		selectAllCheckbox.on('change', function() {
+			page.main.find('.item-checkbox').prop('checked', this.checked);
+			updateTotalLabels();
 		});
 
 		page.main.find('#previewSection').show();
 		page.main.find('#previewSection')[0].scrollIntoView({ behavior: 'smooth' });
+	}
+
+	function updateTotalLabels() {
+		let total = 0;
+		page.main.find('.item-checkbox:checked').each(function() {
+			const index = $(this).data('index');
+			const quantityInput = page.main.find(`.quantity-input[data-index="${index}"]`);
+			total += parseInt(quantityInput.val()) || 0;
+		});
+		page.main.find('#totalLabels').text(total);
 	}
 
 	// Generate labels
@@ -244,13 +309,36 @@ frappe.pages['label-creator'].on_page_load = function(wrapper) {
 			return;
 		}
 
+		// Get selected items with updated prices and quantities
+		const selectedItems = [];
+		page.main.find('.item-checkbox:checked').each(function() {
+			const index = $(this).data('index');
+			const priceInput = page.main.find(`.price-input[data-index="${index}"]`);
+			const quantityInput = page.main.find(`.quantity-input[data-index="${index}"]`);
+
+			const item = {
+				...processedContent[index],
+				display_price: parseFloat(priceInput.val()).toFixed(2),
+				quantity: parseInt(quantityInput.val()) || 0
+			};
+
+			if (item.quantity > 0) {
+				selectedItems.push(item);
+			}
+		});
+
+		if (selectedItems.length === 0) {
+			frappe.msgprint('Please select at least one item to print');
+			return;
+		}
+
 		page.main.find('#loadingSpinner').show();
 
 		frappe.call({
 			method: 'label_creator.api.labels.generate_labels',
 			args: {
 				label_type: labelType,
-				processed_content_json: JSON.stringify(processedContent)
+				processed_content_json: JSON.stringify(selectedItems)
 			},
 			callback: function(r) {
 				page.main.find('#loadingSpinner').hide();
