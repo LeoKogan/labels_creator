@@ -1,9 +1,9 @@
 from . import __version__ as app_version
 
 app_name = "label_creator"
-app_title = "Label Creator"
+app_title = "Label Designer"
 app_publisher = "Your Company"
-app_description = "Create professional product labels with QR codes for ERPNext"
+app_description = "Design professional product labels with QR codes for ERPNext"
 app_email = "info@yourcompany.com"
 app_license = "MIT"
 
@@ -12,7 +12,7 @@ app_license = "MIT"
 
 # Add to website context
 website_context = {
-    "brand_html": "Label Creator"
+    "brand_html": "Label Designer"
 }
 
 # Add custom route to website sidebar
@@ -79,6 +79,24 @@ website_route_rules = [
 
 # before_install = "label_creator.install.before_install"
 after_install = "label_creator.install.install.after_install"
+
+# Fixtures
+# --------
+
+fixtures = [
+	{
+		"dt": "Label Type",
+		"filters": [
+			["name", "in", ["DYMO-30333 | S-14052", "S-16987", "S-18475"]]
+		]
+	},
+	{
+		"dt": "Workspace",
+		"filters": [
+			["name", "=", "Label Designer"]
+		]
+	}
+]
 
 # Uninstallation
 # ------------
