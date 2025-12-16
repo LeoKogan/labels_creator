@@ -429,7 +429,7 @@
  "links": [],
  "modified": "2025-01-14 12:00:00.000000",
  "modified_by": "Administrator",
- "module": "Consignor",
+ "module": "Label Designer",
  "name": "Label Type",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
