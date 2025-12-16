@@ -9,16 +9,15 @@
  "field_order": [
   "label_type_name",
   "display_name",
-  "offset_input_mode_section",
   "offset_input_mode",
-  "section_break_3",
+  "basic_settings_tab",
   "label_width",
   "label_height",
   "label_orientation",
   "column_break_6",
   "labels_per_row",
   "labels_per_column",
-  "section_break_9",
+  "page_setup_section",
   "page_width_inch",
   "page_height_inch",
   "column_break_12",
@@ -26,13 +25,15 @@
   "margin_bottom",
   "margin_left",
   "margin_right",
-  "qr_code_settings_section",
+  "qr_code_tab",
+  "show_qr_code",
   "qrcode_x_offset",
   "qrcode_x_offset_pct",
   "qrcode_y_offset",
   "qrcode_y_offset_pct",
   "qrcode_size_pts",
-  "sku_settings_section",
+  "sku_tab",
+  "show_sku",
   "sku_x_offset",
   "sku_x_offset_pct",
   "sku_y_offset",
@@ -40,7 +41,7 @@
   "column_break_sku",
   "sku_font_type",
   "sku_font_size",
-  "product_name_settings_section",
+  "product_name_tab",
   "show_product_name",
   "product_name_x_offset",
   "product_name_x_offset_pct",
@@ -49,7 +50,8 @@
   "column_break_product",
   "product_name_font_type",
   "product_name_font_size",
-  "price_tag_settings_section",
+  "price_tab",
+  "show_price",
   "price_x_offset",
   "price_x_offset_pct",
   "price_y_offset",
@@ -58,7 +60,7 @@
   "column_break_price",
   "price_font_type",
   "price_font_size",
-  "file_settings_section",
+  "file_tab",
   "file_name"
  ],
  "fields": [
@@ -78,34 +80,31 @@
    "reqd": 1
   },
   {
-   "fieldname": "offset_input_mode_section",
-   "fieldtype": "Section Break",
-   "label": "Offset Input Mode"
-  },
-  {
    "fieldname": "offset_input_mode",
    "fieldtype": "Select",
    "label": "Offset Input Mode",
    "options": "Inches\nPercentage",
-   "default": "Inches",
+   "default": "Percentage",
    "description": "Choose whether to input offsets in inches or as percentage of label size"
   },
   {
-   "fieldname": "section_break_3",
-   "fieldtype": "Section Break",
-   "label": "Label Dimensions"
+   "fieldname": "basic_settings_tab",
+   "fieldtype": "Tab Break",
+   "label": "Basic Settings"
   },
   {
    "fieldname": "label_width",
    "fieldtype": "Float",
    "label": "Label Width (inches)",
-   "reqd": 1
+   "reqd": 1,
+   "default": "0.5"
   },
   {
    "fieldname": "label_height",
    "fieldtype": "Float",
    "label": "Label Height (inches)",
-   "reqd": 1
+   "reqd": 1,
+   "default": "1.0"
   },
   {
    "fieldname": "label_orientation",
@@ -122,16 +121,18 @@
    "fieldname": "labels_per_row",
    "fieldtype": "Int",
    "label": "Labels per Row",
-   "reqd": 1
+   "reqd": 1,
+   "default": "2"
   },
   {
    "fieldname": "labels_per_column",
    "fieldtype": "Int",
    "label": "Labels per Column",
-   "reqd": 1
+   "reqd": 1,
+   "default": "5"
   },
   {
-   "fieldname": "section_break_9",
+   "fieldname": "page_setup_section",
    "fieldtype": "Section Break",
    "label": "Page Setup"
   },
@@ -139,13 +140,15 @@
    "fieldname": "page_width_inch",
    "fieldtype": "Float",
    "label": "Page Width (inches)",
-   "reqd": 1
+   "reqd": 1,
+   "default": "8.5"
   },
   {
    "fieldname": "page_height_inch",
    "fieldtype": "Float",
    "label": "Page Height (inches)",
-   "reqd": 1
+   "reqd": 1,
+   "default": "11.0"
   },
   {
    "fieldname": "column_break_12",
@@ -155,93 +158,114 @@
    "fieldname": "margin_top",
    "fieldtype": "Float",
    "label": "Margin Top (inches)",
-   "default": "0"
+   "default": "0.5"
   },
   {
    "fieldname": "margin_bottom",
    "fieldtype": "Float",
    "label": "Margin Bottom (inches)",
-   "default": "0"
+   "default": "0.5"
   },
   {
    "fieldname": "margin_left",
    "fieldtype": "Float",
    "label": "Margin Left (inches)",
-   "default": "0"
+   "default": "0.5"
   },
   {
    "fieldname": "margin_right",
    "fieldtype": "Float",
    "label": "Margin Right (inches)",
-   "default": "0"
+   "default": "0.5"
   },
   {
-   "fieldname": "qr_code_settings_section",
-   "fieldtype": "Section Break",
-   "label": "QR Code Settings"
+   "fieldname": "qr_code_tab",
+   "fieldtype": "Tab Break",
+   "label": "QR Code"
+  },
+  {
+   "fieldname": "show_qr_code",
+   "fieldtype": "Check",
+   "label": "Show QR Code",
+   "default": "1"
   },
   {
    "fieldname": "qrcode_x_offset",
    "fieldtype": "Float",
    "label": "QR Code X Offset (inches)",
-   "default": "0"
+   "default": "0.05",
+   "depends_on": "eval:doc.show_qr_code"
   },
   {
    "fieldname": "qrcode_x_offset_pct",
    "fieldtype": "Float",
    "label": "QR Code X Offset (%)",
-   "default": "0",
-   "read_only": 1
+   "default": "10",
+   "read_only": 1,
+   "depends_on": "eval:doc.show_qr_code"
   },
   {
    "fieldname": "qrcode_y_offset",
    "fieldtype": "Float",
    "label": "QR Code Y Offset (inches)",
-   "default": "0"
+   "default": "0.05",
+   "depends_on": "eval:doc.show_qr_code"
   },
   {
    "fieldname": "qrcode_y_offset_pct",
    "fieldtype": "Float",
    "label": "QR Code Y Offset (%)",
-   "default": "0",
-   "read_only": 1
+   "default": "5",
+   "read_only": 1,
+   "depends_on": "eval:doc.show_qr_code"
   },
   {
    "fieldname": "qrcode_size_pts",
    "fieldtype": "Float",
    "label": "QR Code Size (points)",
-   "description": "Leave blank for auto-calculation"
+   "description": "Leave blank for auto-calculation",
+   "depends_on": "eval:doc.show_qr_code"
   },
   {
-   "fieldname": "sku_settings_section",
-   "fieldtype": "Section Break",
-   "label": "SKU Settings"
+   "fieldname": "sku_tab",
+   "fieldtype": "Tab Break",
+   "label": "SKU"
+  },
+  {
+   "fieldname": "show_sku",
+   "fieldtype": "Check",
+   "label": "Show SKU",
+   "default": "1"
   },
   {
    "fieldname": "sku_x_offset",
    "fieldtype": "Float",
    "label": "SKU X Offset (inches)",
-   "default": "0"
+   "default": "0.05",
+   "depends_on": "eval:doc.show_sku"
   },
   {
    "fieldname": "sku_x_offset_pct",
    "fieldtype": "Float",
    "label": "SKU X Offset (%)",
-   "default": "0",
-   "read_only": 1
+   "default": "10",
+   "read_only": 1,
+   "depends_on": "eval:doc.show_sku"
   },
   {
    "fieldname": "sku_y_offset",
    "fieldtype": "Float",
    "label": "SKU Y Offset (inches)",
-   "default": "0"
+   "default": "0.45",
+   "depends_on": "eval:doc.show_sku"
   },
   {
    "fieldname": "sku_y_offset_pct",
    "fieldtype": "Float",
    "label": "SKU Y Offset (%)",
-   "default": "0",
-   "read_only": 1
+   "default": "45",
+   "read_only": 1,
+   "depends_on": "eval:doc.show_sku"
   },
   {
    "fieldname": "column_break_sku",
@@ -252,49 +276,56 @@
    "fieldtype": "Select",
    "label": "SKU Font Type",
    "options": "Helvetica\nHelvetica-Bold\nTimes-Roman\nTimes-Bold\nCourier\nCourier-Bold",
-   "default": "Helvetica"
+   "default": "Helvetica",
+   "depends_on": "eval:doc.show_sku"
   },
   {
    "fieldname": "sku_font_size",
    "fieldtype": "Int",
    "label": "SKU Font Size (points)",
-   "default": "7"
+   "default": "7",
+   "depends_on": "eval:doc.show_sku"
   },
   {
-   "fieldname": "product_name_settings_section",
-   "fieldtype": "Section Break",
-   "label": "Product Name Settings"
+   "fieldname": "product_name_tab",
+   "fieldtype": "Tab Break",
+   "label": "Product Name"
   },
   {
    "fieldname": "show_product_name",
    "fieldtype": "Check",
-   "label": "Show Product Name"
+   "label": "Show Product Name",
+   "default": "0"
   },
   {
    "fieldname": "product_name_x_offset",
    "fieldtype": "Float",
    "label": "Product Name X Offset (inches)",
-   "default": "0"
+   "default": "0.05",
+   "depends_on": "eval:doc.show_product_name"
   },
   {
    "fieldname": "product_name_x_offset_pct",
    "fieldtype": "Float",
    "label": "Product Name X Offset (%)",
-   "default": "0",
-   "read_only": 1
+   "default": "10",
+   "read_only": 1,
+   "depends_on": "eval:doc.show_product_name"
   },
   {
    "fieldname": "product_name_y_offset",
    "fieldtype": "Float",
    "label": "Product Name Y Offset (inches)",
-   "default": "0"
+   "default": "0.6",
+   "depends_on": "eval:doc.show_product_name"
   },
   {
    "fieldname": "product_name_y_offset_pct",
    "fieldtype": "Float",
    "label": "Product Name Y Offset (%)",
-   "default": "0",
-   "read_only": 1
+   "default": "60",
+   "read_only": 1,
+   "depends_on": "eval:doc.show_product_name"
   },
   {
    "fieldname": "column_break_product",
@@ -305,50 +336,63 @@
    "fieldtype": "Select",
    "label": "Product Name Font Type",
    "options": "Helvetica\nHelvetica-Bold\nTimes-Roman\nTimes-Bold\nCourier\nCourier-Bold",
-   "default": "Helvetica"
+   "default": "Helvetica",
+   "depends_on": "eval:doc.show_product_name"
   },
   {
    "fieldname": "product_name_font_size",
    "fieldtype": "Int",
    "label": "Product Name Font Size (points)",
-   "default": "6"
+   "default": "6",
+   "depends_on": "eval:doc.show_product_name"
   },
   {
-   "fieldname": "price_tag_settings_section",
-   "fieldtype": "Section Break",
-   "label": "Price Tag Settings"
+   "fieldname": "price_tab",
+   "fieldtype": "Tab Break",
+   "label": "Price"
+  },
+  {
+   "fieldname": "show_price",
+   "fieldtype": "Check",
+   "label": "Show Price",
+   "default": "1"
   },
   {
    "fieldname": "price_x_offset",
    "fieldtype": "Float",
    "label": "Price X Offset (inches)",
-   "default": "0"
+   "default": "0.05",
+   "depends_on": "eval:doc.show_price"
   },
   {
    "fieldname": "price_x_offset_pct",
    "fieldtype": "Float",
    "label": "Price X Offset (%)",
-   "default": "0",
-   "read_only": 1
+   "default": "10",
+   "read_only": 1,
+   "depends_on": "eval:doc.show_price"
   },
   {
    "fieldname": "price_y_offset",
    "fieldtype": "Float",
    "label": "Price Y Offset (inches)",
-   "default": "0"
+   "default": "0.8",
+   "depends_on": "eval:doc.show_price"
   },
   {
    "fieldname": "price_y_offset_pct",
    "fieldtype": "Float",
    "label": "Price Y Offset (%)",
-   "default": "0",
-   "read_only": 1
+   "default": "80",
+   "read_only": 1,
+   "depends_on": "eval:doc.show_price"
   },
   {
    "fieldname": "price_rotation",
    "fieldtype": "Int",
    "label": "Price Rotation (degrees)",
-   "default": "0"
+   "default": "0",
+   "depends_on": "eval:doc.show_price"
   },
   {
    "fieldname": "column_break_price",
@@ -359,17 +403,19 @@
    "fieldtype": "Select",
    "label": "Price Font Type",
    "options": "Helvetica\nHelvetica-Bold\nTimes-Roman\nTimes-Bold\nCourier\nCourier-Bold",
-   "default": "Helvetica-Bold"
+   "default": "Helvetica-Bold",
+   "depends_on": "eval:doc.show_price"
   },
   {
    "fieldname": "price_font_size",
    "fieldtype": "Int",
    "label": "Price Font Size (points)",
-   "default": "10"
+   "default": "8",
+   "depends_on": "eval:doc.show_price"
   },
   {
-   "fieldname": "file_settings_section",
-   "fieldtype": "Section Break",
+   "fieldname": "file_tab",
+   "fieldtype": "Tab Break",
    "label": "File Settings"
   },
   {

@@ -34,23 +34,26 @@ def get_label_dimensions():
                 "margin_bottom": lt.margin_bottom or 0,
                 "margin_left": lt.margin_left or 0,
                 "margin_right": lt.margin_right or 0,
+                "show_qr_code": lt.get("show_qr_code", 1),
                 "qrcode_x_offset": lt.qrcode_x_offset or 0,
                 "qrcode_y_offset": lt.qrcode_y_offset or 0,
                 "qrcode_size_pts": lt.qrcode_size_pts or None,
+                "show_sku": lt.get("show_sku", 1),
                 "sku_x_offset": lt.sku_x_offset or 0,
                 "sku_y_offset": lt.sku_y_offset or 0,
                 "sku_font_type": lt.get("sku_font_type") or "Helvetica",
                 "sku_font_size": lt.get("sku_font_size") or 7,
+                "show_product_name": lt.get("show_product_name", 0),
                 "product_name_x_offset": lt.get("product_name_x_offset") or 0,
                 "product_name_y_offset": lt.get("product_name_y_offset") or 0,
                 "product_name_font_type": lt.get("product_name_font_type") or "Helvetica",
                 "product_name_font_size": lt.get("product_name_font_size") or 6,
+                "show_price": lt.get("show_price", 1),
                 "price_x_offset": lt.price_x_offset or 0,
                 "price_y_offset": lt.price_y_offset or 0,
                 "price_rotation": lt.price_rotation or 0,
                 "price_font_type": lt.get("price_font_type") or "Helvetica-Bold",
                 "price_font_size": lt.get("price_font_size") or 10,
-                "show_product_name": lt.show_product_name or 0,
                 "file_name": lt.file_name or "labels"
             }
         return data
@@ -163,36 +166,38 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
         # Landscape Layout
         # Offsets are from: X = left edge, Y = top edge (positive Y goes down)
 
-        qr_size_pts = label_height_pts * 0.8  # 80% of label height
+        # Draw the QR code if enabled
+        if config.get("show_qr_code", True):
+            qr_size_pts = label_height_pts * 0.8  # 80% of label height
 
-        # Draw the QR code
-        # Position from left edge + offset, and from top edge - offset
-        # (subtract qr_size_pts because drawImage uses bottom-left corner)
-        qr_x = x + qr_x_offset
-        qr_y = y - qr_y_offset - qr_size_pts
+            # Position from left edge + offset, and from top edge - offset
+            # (subtract qr_size_pts because drawImage uses bottom-left corner)
+            qr_x = x + qr_x_offset
+            qr_y = y - qr_y_offset - qr_size_pts
 
-        c.drawImage(
-            qr_path,
-            qr_x,
-            qr_y,
-            width=qr_size_pts,
-            height=qr_size_pts,
-            preserveAspectRatio=True,
-            mask='auto'
-        )
+            c.drawImage(
+                qr_path,
+                qr_x,
+                qr_y,
+                width=qr_size_pts,
+                height=qr_size_pts,
+                preserveAspectRatio=True,
+                mask='auto'
+            )
 
-        # Draw the SKU text with wrapping
-        # Calculate available width (label width minus x offset and some margin)
-        available_width = label_width_pts - sku_x_offset - 5  # 5pt margin
-        sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width)
+        # Draw the SKU text with wrapping if enabled
+        if config.get("show_sku", True):
+            # Calculate available width (label width minus x offset and some margin)
+            available_width = label_width_pts - sku_x_offset - 5  # 5pt margin
+            sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width)
 
-        sku_text_x = x + sku_x_offset
-        sku_text_y = y - sku_y_offset - sku_font_size
-        c.setFont(sku_font_type, sku_font_size)
+            sku_text_x = x + sku_x_offset
+            sku_text_y = y - sku_y_offset - sku_font_size
+            c.setFont(sku_font_type, sku_font_size)
 
-        for i, line in enumerate(sku_lines):
-            line_y = sku_text_y - (i * sku_font_size * 1.2)  # 1.2 = line spacing
-            c.drawString(sku_text_x, line_y, line)
+            for i, line in enumerate(sku_lines):
+                line_y = sku_text_y - (i * sku_font_size * 1.2)  # 1.2 = line spacing
+                c.drawString(sku_text_x, line_y, line)
 
         # Draw product name if enabled with wrapping
         if config.get("show_product_name", False):
@@ -207,47 +212,50 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
                 line_y = product_text_y - (i * product_name_font_size * 1.2)
                 c.drawString(product_text_x, line_y, line)
 
-        # Draw the price
-        price_text = f"${float(price):.2f}"
-        price_x = x + price_x_offset
-        price_y = y - price_y_offset
-        price_rotation = config.get("price_rotation", 90)
-        draw_rotated_text(c, price_text, price_x, price_y, angle=price_rotation,
-                          font_name=price_font_type, font_size=price_font_size)
+        # Draw the price if enabled
+        if config.get("show_price", True):
+            price_text = f"${float(price):.2f}"
+            price_x = x + price_x_offset
+            price_y = y - price_y_offset
+            price_rotation = config.get("price_rotation", 90)
+            draw_rotated_text(c, price_text, price_x, price_y, angle=price_rotation,
+                              font_name=price_font_type, font_size=price_font_size)
 
     else:
         # Portrait Layout
         # Pure offset positioning: X from left edge, Y from top edge
         # When offsets are 0, elements appear at top-left corner
 
-        qr_size_pts = min(label_width_pts, label_height_pts * 0.4)
+        # Draw QR code if enabled
+        if config.get("show_qr_code", True):
+            qr_size_pts = min(label_width_pts, label_height_pts * 0.4)
 
-        # Draw QR code
-        # Position purely from offsets (no automatic centering)
-        qr_x = x + qr_x_offset
-        qr_y = y - qr_y_offset - qr_size_pts
-        c.drawImage(
-            qr_path,
-            qr_x,
-            qr_y,
-            width=qr_size_pts,
-            height=qr_size_pts,
-            preserveAspectRatio=True,
-            mask='auto'
-        )
+            # Position purely from offsets (no automatic centering)
+            qr_x = x + qr_x_offset
+            qr_y = y - qr_y_offset - qr_size_pts
+            c.drawImage(
+                qr_path,
+                qr_x,
+                qr_y,
+                width=qr_size_pts,
+                height=qr_size_pts,
+                preserveAspectRatio=True,
+                mask='auto'
+            )
 
-        # Draw SKU text with wrapping
-        # Calculate available width (label width minus x offset and some margin)
-        available_width = label_width_pts - sku_x_offset - 5  # 5pt margin
-        sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width)
+        # Draw SKU text with wrapping if enabled
+        if config.get("show_sku", True):
+            # Calculate available width (label width minus x offset and some margin)
+            available_width = label_width_pts - sku_x_offset - 5  # 5pt margin
+            sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width)
 
-        sku_text_x = x + sku_x_offset
-        sku_text_y = y - sku_y_offset - sku_font_size
-        c.setFont(sku_font_type, sku_font_size)
+            sku_text_x = x + sku_x_offset
+            sku_text_y = y - sku_y_offset - sku_font_size
+            c.setFont(sku_font_type, sku_font_size)
 
-        for i, line in enumerate(sku_lines):
-            line_y = sku_text_y - (i * sku_font_size * 1.2)  # 1.2 = line spacing
-            c.drawString(sku_text_x, line_y, line)
+            for i, line in enumerate(sku_lines):
+                line_y = sku_text_y - (i * sku_font_size * 1.2)  # 1.2 = line spacing
+                c.drawString(sku_text_x, line_y, line)
 
         # Draw product name if enabled with wrapping
         if config.get("show_product_name", False):
@@ -262,11 +270,12 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
                 line_y = product_text_y - (i * product_name_font_size * 1.2)
                 c.drawString(product_text_x, line_y, line)
 
-        # Draw price
-        price_text_x = x + price_x_offset
-        price_text_y = y - price_y_offset - price_font_size
-        c.setFont(price_font_type, price_font_size)
-        c.drawString(price_text_x, price_text_y, f"${float(price):.2f}")
+        # Draw price if enabled
+        if config.get("show_price", True):
+            price_text_x = x + price_x_offset
+            price_text_y = y - price_y_offset - price_font_size
+            c.setFont(price_font_type, price_font_size)
+            c.drawString(price_text_x, price_text_y, f"${float(price):.2f}")
 
 
 def create_labels_pdf(labels_data, label_type):
