@@ -151,12 +151,13 @@ frappe.pages['label-creator'].on_page_load = function(wrapper) {
 		.input-group > .form-control {
 			border-radius: 3px !important;
 		}
-		/* SKU column word wrapping */
+		/* SKU column word wrapping - break on hyphens and word boundaries */
 		#previewTable tbody td:nth-child(2) {
-			word-break: break-word;
-			overflow-wrap: break-word;
-			hyphens: auto;
+			overflow-wrap: anywhere;
+			word-break: normal;
+			white-space: normal;
 			max-width: 200px;
+			min-width: 80px;
 		}
 		</style>
 	`);
