@@ -93,7 +93,58 @@ def wrap_text(c, text, font_name, font_size, max_width_pts, max_word_length=None
     current_line = ""
 
     for word in words:
-        # If max_word_length is set and word is too long, split it first
+        # First, handle hyphenated words by splitting on hyphens
+        if '-' in word:
+            # Split "ABC-DEF-GHI" into ["ABC-", "DEF-", "GHI"]
+            parts = word.split('-')
+            hyphen_parts = [p + '-' for p in parts[:-1]] + [parts[-1]]
+
+            # If max_word_length is set, further split any parts that are too long
+            if max_word_length:
+                split_parts = []
+                for part in hyphen_parts:
+                    if len(part) > max_word_length:
+                        # Split this part into character chunks
+                        for i in range(0, len(part), max_word_length):
+                            split_parts.append(part[i:i+max_word_length])
+                    else:
+                        split_parts.append(part)
+                hyphen_parts = split_parts
+
+            # Try to fit as many parts as possible on current line
+            for i, part in enumerate(hyphen_parts):
+                test_line = current_line + (" " if current_line else "") + part
+                test_width = c.stringWidth(test_line, font_name, font_size)
+
+                if test_width <= max_width_pts:
+                    # This part fits, add it
+                    current_line = test_line
+                else:
+                    # This part doesn't fit
+                    if current_line:
+                        # Save current line and start new one with this part
+                        lines.append(current_line)
+                        current_line = part
+                    else:
+                        # Even a single part is too long, add it anyway
+                        lines.append(part)
+                        current_line = ""
+
+                    # Add remaining parts, trying to fit as many as possible per line
+                    for remaining_part in hyphen_parts[i+1:]:
+                        test_line = current_line + (" " if current_line else "") + remaining_part
+                        test_width = c.stringWidth(test_line, font_name, font_size)
+
+                        if test_width <= max_width_pts:
+                            current_line = test_line
+                        else:
+                            if current_line:
+                                lines.append(current_line)
+                            current_line = remaining_part
+                    break  # Done processing this word
+            continue  # Move to next word
+
+        # If max_word_length is set and word is too long (and no hyphens), split by characters
         if max_word_length and len(word) > max_word_length:
             # Split word into chunks of max_word_length
             word_chunks = [word[i:i+max_word_length] for i in range(0, len(word), max_word_length)]
@@ -111,60 +162,21 @@ def wrap_text(c, text, font_name, font_size, max_width_pts, max_word_length=None
                     current_line = chunk
             continue  # Move to next word
 
-        # Check if we can fit the whole word
+        # Check if we can fit the whole word (no hyphens, not too long)
         test_line = current_line + (" " if current_line else "") + word
         test_width = c.stringWidth(test_line, font_name, font_size)
 
         if test_width <= max_width_pts:
             current_line = test_line
         else:
-            # Word doesn't fit, try breaking on hyphens
-            if '-' in word:
-                # Split "ABC-DEF-GHI" into ["ABC-", "DEF-", "GHI"]
-                parts = word.split('-')
-                # Add hyphen back to all parts except the last
-                hyphen_parts = [p + '-' for p in parts[:-1]] + [parts[-1]]
-
-                # Try to fit as many parts as possible on current line
-                for i, part in enumerate(hyphen_parts):
-                    test_line = current_line + (" " if current_line else "") + part
-                    test_width = c.stringWidth(test_line, font_name, font_size)
-
-                    if test_width <= max_width_pts:
-                        # This part fits, add it
-                        current_line = test_line
-                    else:
-                        # This part doesn't fit
-                        if current_line:
-                            # Save current line and start new one with this part
-                            lines.append(current_line)
-                            current_line = part
-                        else:
-                            # Even a single part is too long, add it anyway
-                            lines.append(part)
-                            current_line = ""
-
-                        # Add remaining parts, trying to fit as many as possible per line
-                        for remaining_part in hyphen_parts[i+1:]:
-                            test_line = current_line + (" " if current_line else "") + remaining_part
-                            test_width = c.stringWidth(test_line, font_name, font_size)
-
-                            if test_width <= max_width_pts:
-                                current_line = test_line
-                            else:
-                                if current_line:
-                                    lines.append(current_line)
-                                current_line = remaining_part
-                        break  # Done processing this word
+            # Word doesn't fit
+            if current_line:
+                lines.append(current_line)
+                current_line = word
             else:
-                # No hyphens, add current line and start new one
-                if current_line:
-                    lines.append(current_line)
-                    current_line = word
-                else:
-                    # Single word is too long, add it anyway
-                    lines.append(word)
-                    current_line = ""
+                # Single word is too long, add it anyway
+                lines.append(word)
+                current_line = ""
 
     if current_line:
         lines.append(current_line)
