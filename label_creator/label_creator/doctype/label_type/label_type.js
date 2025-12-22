@@ -18,22 +18,36 @@ frappe.ui.form.on('Label Type', {
 	},
 
 	label_width: function(frm) {
-		// Recalculate X offset percentages when label width changes
+		// Recalculate X offset values when label width changes
 		if (frm.doc.offset_input_mode === 'Inches') {
+			// In Inches mode: update percentages based on inches
 			update_percentage_from_inches(frm, 'qrcode_x_offset', 'qrcode_x_offset_pct', 'label_width');
 			update_percentage_from_inches(frm, 'sku_x_offset', 'sku_x_offset_pct', 'label_width');
 			update_percentage_from_inches(frm, 'product_name_x_offset', 'product_name_x_offset_pct', 'label_width');
 			update_percentage_from_inches(frm, 'price_x_offset', 'price_x_offset_pct', 'label_width');
+		} else {
+			// In Percentage mode: update inches based on percentages
+			update_inches_from_percentage(frm, 'qrcode_x_offset_pct', 'qrcode_x_offset', 'label_width');
+			update_inches_from_percentage(frm, 'sku_x_offset_pct', 'sku_x_offset', 'label_width');
+			update_inches_from_percentage(frm, 'product_name_x_offset_pct', 'product_name_x_offset', 'label_width');
+			update_inches_from_percentage(frm, 'price_x_offset_pct', 'price_x_offset', 'label_width');
 		}
 	},
 
 	label_height: function(frm) {
-		// Recalculate Y offset percentages when label height changes
+		// Recalculate Y offset values when label height changes
 		if (frm.doc.offset_input_mode === 'Inches') {
+			// In Inches mode: update percentages based on inches
 			update_percentage_from_inches(frm, 'qrcode_y_offset', 'qrcode_y_offset_pct', 'label_height');
 			update_percentage_from_inches(frm, 'sku_y_offset', 'sku_y_offset_pct', 'label_height');
 			update_percentage_from_inches(frm, 'product_name_y_offset', 'product_name_y_offset_pct', 'label_height');
 			update_percentage_from_inches(frm, 'price_y_offset', 'price_y_offset_pct', 'label_height');
+		} else {
+			// In Percentage mode: update inches based on percentages
+			update_inches_from_percentage(frm, 'qrcode_y_offset_pct', 'qrcode_y_offset', 'label_height');
+			update_inches_from_percentage(frm, 'sku_y_offset_pct', 'sku_y_offset', 'label_height');
+			update_inches_from_percentage(frm, 'product_name_y_offset_pct', 'product_name_y_offset', 'label_height');
+			update_inches_from_percentage(frm, 'price_y_offset_pct', 'price_y_offset', 'label_height');
 		}
 	},
 
@@ -210,11 +224,13 @@ function preview_label(frm) {
 		sku_y_offset: frm.doc.sku_y_offset || 0,
 		sku_font_type: frm.doc.sku_font_type || 'Helvetica',
 		sku_font_size: frm.doc.sku_font_size || 7,
+		sku_max_word_length: frm.doc.sku_max_word_length || null,
 		show_product_name: frm.doc.show_product_name || 0,
 		product_name_x_offset: frm.doc.product_name_x_offset || 0,
 		product_name_y_offset: frm.doc.product_name_y_offset || 0,
 		product_name_font_type: frm.doc.product_name_font_type || 'Helvetica',
 		product_name_font_size: frm.doc.product_name_font_size || 6,
+		product_name_max_word_length: frm.doc.product_name_max_word_length || null,
 		show_price: frm.doc.show_price || 1,
 		price_x_offset: frm.doc.price_x_offset || 0,
 		price_y_offset: frm.doc.price_y_offset || 0,

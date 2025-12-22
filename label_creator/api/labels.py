@@ -211,10 +211,23 @@ def get_label_types():
                 "qrcode_size_pts": lt.qrcode_size_pts or None,
                 "sku_x_offset": lt.sku_x_offset or 0,
                 "sku_y_offset": lt.sku_y_offset or 0,
+                "sku_font_type": lt.get("sku_font_type") or "Helvetica",
+                "sku_font_size": lt.get("sku_font_size") or 7,
+                "sku_max_word_length": lt.get("sku_max_word_length") or None,
+                "product_name_x_offset": lt.get("product_name_x_offset") or 0,
+                "product_name_y_offset": lt.get("product_name_y_offset") or 0,
+                "product_name_font_type": lt.get("product_name_font_type") or "Helvetica",
+                "product_name_font_size": lt.get("product_name_font_size") or 6,
+                "product_name_max_word_length": lt.get("product_name_max_word_length") or None,
                 "price_x_offset": lt.price_x_offset or 0,
                 "price_y_offset": lt.price_y_offset or 0,
                 "price_rotation": lt.price_rotation or 0,
+                "price_font_type": lt.get("price_font_type") or "Helvetica-Bold",
+                "price_font_size": lt.get("price_font_size") or 8,
+                "show_qr_code": lt.get("show_qr_code", 1),
+                "show_sku": lt.get("show_sku", 1),
                 "show_product_name": lt.show_product_name or 0,
+                "show_price": lt.get("show_price", 1),
                 "file_name": lt.file_name or "labels"
             }
 
