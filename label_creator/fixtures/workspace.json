@@ -9,7 +9,7 @@
  "icon": "tag",
  "idx": 0,
  "is_hidden": 0,
- "label": "Label Creator",
+ "label": "Labels",
  "links": [
   {
    "hidden": 0,
@@ -35,7 +35,7 @@
  "modified": "2025-01-14 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Label Creator",
- "name": "Label Creator",
+ "name": "Labels",
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
@@ -58,5 +58,5 @@
    "type": "URL"
   }
  ],
- "title": "Label Creator"
+ "title": "Labels"
 }

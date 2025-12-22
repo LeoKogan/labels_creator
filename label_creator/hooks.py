@@ -87,7 +87,7 @@ fixtures = [
 	{
 		"dt": "Workspace",
 		"filters": [
-			["name", "=", "Label Creator"]
+			["name", "=", "Labels"]
 		]
 	}
 ]
