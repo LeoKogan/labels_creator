@@ -43,11 +43,13 @@ def get_label_dimensions():
                 "sku_y_offset": lt.sku_y_offset or 0,
                 "sku_font_type": lt.get("sku_font_type") or "Helvetica",
                 "sku_font_size": lt.get("sku_font_size") or 7,
+                "sku_max_word_length": lt.get("sku_max_word_length") or None,
                 "show_product_name": lt.get("show_product_name", 0),
                 "product_name_x_offset": lt.get("product_name_x_offset") or 0,
                 "product_name_y_offset": lt.get("product_name_y_offset") or 0,
                 "product_name_font_type": lt.get("product_name_font_type") or "Helvetica",
                 "product_name_font_size": lt.get("product_name_font_size") or 6,
+                "product_name_max_word_length": lt.get("product_name_max_word_length") or None,
                 "show_price": lt.get("show_price", 1),
                 "price_x_offset": lt.price_x_offset or 0,
                 "price_y_offset": lt.price_y_offset or 0,
@@ -76,11 +78,12 @@ def get_or_create_qr(sku, qr_dir):
     return qr_path
 
 
-def wrap_text(c, text, font_name, font_size, max_width_pts):
+def wrap_text(c, text, font_name, font_size, max_width_pts, max_word_length=None):
     """
     Wrap text to fit within max_width_pts.
     Returns a list of text lines.
     Handles breaking on both spaces and hyphens, trying to fit as much as possible per line.
+    If max_word_length is set, also splits words longer than that character count.
     """
     import re
 
@@ -90,6 +93,24 @@ def wrap_text(c, text, font_name, font_size, max_width_pts):
     current_line = ""
 
     for word in words:
+        # If max_word_length is set and word is too long, split it first
+        if max_word_length and len(word) > max_word_length:
+            # Split word into chunks of max_word_length
+            word_chunks = [word[i:i+max_word_length] for i in range(0, len(word), max_word_length)]
+
+            # Process each chunk as a separate word
+            for chunk in word_chunks:
+                test_line = current_line + (" " if current_line else "") + chunk
+                test_width = c.stringWidth(test_line, font_name, font_size)
+
+                if test_width <= max_width_pts:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    current_line = chunk
+            continue  # Move to next word
+
         # Check if we can fit the whole word
         test_line = current_line + (" " if current_line else "") + word
         test_width = c.stringWidth(test_line, font_name, font_size)
@@ -200,8 +221,10 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
     # Font settings
     sku_font_type = config.get("sku_font_type", "Helvetica")
     sku_font_size = config.get("sku_font_size", 7)
+    sku_max_word_length = config.get("sku_max_word_length")
     product_name_font_type = config.get("product_name_font_type", "Helvetica")
     product_name_font_size = config.get("product_name_font_size", 6)
+    product_name_max_word_length = config.get("product_name_max_word_length")
     price_font_type = config.get("price_font_type", "Helvetica-Bold")
     price_font_size = config.get("price_font_size", 10)
 
@@ -235,7 +258,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
         if config.get("show_sku", True):
             # Calculate available width (label width minus x offset and right margin)
             available_width = label_width_pts - sku_x_offset - 10  # 10pt right margin
-            sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width)
+            sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width, sku_max_word_length)
 
             sku_text_x = x + sku_x_offset
             sku_text_y = y - sku_y_offset - sku_font_size
@@ -248,7 +271,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
         # Draw product name if enabled with wrapping
         if config.get("show_product_name", False):
             available_width = label_width_pts - product_name_x_offset - 10  # 10pt right margin
-            product_lines = wrap_text(c, name, product_name_font_type, product_name_font_size, available_width)
+            product_lines = wrap_text(c, name, product_name_font_type, product_name_font_size, available_width, product_name_max_word_length)
 
             product_text_x = x + product_name_x_offset
             product_text_y = y - product_name_y_offset - product_name_font_size
@@ -293,7 +316,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
         if config.get("show_sku", True):
             # Calculate available width (label width minus x offset and right margin)
             available_width = label_width_pts - sku_x_offset - 10  # 10pt right margin
-            sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width)
+            sku_lines = wrap_text(c, sku, sku_font_type, sku_font_size, available_width, sku_max_word_length)
 
             sku_text_x = x + sku_x_offset
             sku_text_y = y - sku_y_offset - sku_font_size
@@ -306,7 +329,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
         # Draw product name if enabled with wrapping
         if config.get("show_product_name", False):
             available_width = label_width_pts - product_name_x_offset - 10  # 10pt right margin
-            product_lines = wrap_text(c, name, product_name_font_type, product_name_font_size, available_width)
+            product_lines = wrap_text(c, name, product_name_font_type, product_name_font_size, available_width, product_name_max_word_length)
 
             product_text_x = x + product_name_x_offset
             product_text_y = y - product_name_y_offset - product_name_font_size
