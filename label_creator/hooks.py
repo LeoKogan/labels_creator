@@ -27,7 +27,7 @@ portal_menu_items = [
         "title": "Labels",
         "route": "/label-creator",
         "reference_doctype": "",
-        "role": ""
+        "role": "All"
     }
 ]
 
