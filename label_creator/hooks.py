@@ -21,6 +21,16 @@ website_route_rules = [
     {"from_route": "/label-creator", "to_route": "label-creator"},
 ]
 
+# Portal menu items
+portal_menu_items = [
+    {
+        "title": "Labels",
+        "route": "/label-creator",
+        "reference_doctype": "",
+        "role": ""
+    }
+]
+
 # Includes in <head>
 # ------------------
 
