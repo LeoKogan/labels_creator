@@ -86,6 +86,20 @@
         </div>
     </div>
 
+    <!-- Error Section -->
+    <div id="errorSection" class="row mt-4" style="display: none;">
+        <div class="col-md-12">
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading">❌ Error Processing File</h4>
+                <p id="errorMessage" style="white-space: pre-wrap;"></p>
+                <hr>
+                <button id="tryAgainBtn" class="btn btn-danger">
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Spinner -->
     <div id="loadingSpinner" class="row mt-4" style="display: none;">
         <div class="col-md-12 text-center">
@@ -101,7 +115,7 @@
         <div class="col-md-12">
             <div class="alert alert-success" role="alert">
                 <h4 class="alert-heading">✅ Labels Generated Successfully!</h4>
-                <p>Your PDF file is ready for download.</p>
+                <p>Your PDF file has been downloaded automatically. If the download didn't start, click the button below.</p>
                 <hr>
                 <div class="d-flex gap-2">
                     <a id="downloadLink" href="#" class="btn btn-success" download>
@@ -109,10 +123,10 @@
                             <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
                             <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
                         </svg>
-                        Download PDF
+                        Download Again
                     </a>
                     <button id="generateAnotherBtn" class="btn btn-primary">
-                        Generate Another
+                        Go Back
                     </button>
                 </div>
             </div>
@@ -299,13 +313,13 @@ uploadBtn.addEventListener('click', function() {
                             processedContent = response.message.processed_content;
                             displayPreview(processedContent, response.message.total_labels);
                         } else {
-                            alert('Error processing files: ' + (response.message?.message || 'Unknown error'));
+                            showError(response.message?.message || 'Unknown error processing files');
                         }
                     },
                     error: function(error) {
                         document.getElementById('loadingSpinner').style.display = 'none';
                         console.error('Upload error:', error);
-                        alert('Error uploading files');
+                        showError('Error uploading files: ' + (error.message || 'Network error'));
                     }
                 });
             }
@@ -314,7 +328,14 @@ uploadBtn.addEventListener('click', function() {
     });
 });
 
+function showError(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('errorSection').style.display = 'block';
+    document.getElementById('errorSection').scrollIntoView({ behavior: 'smooth' });
+}
+
 function displayPreview(content, totalLabels) {
+    document.getElementById('errorSection').style.display = 'none';
     document.getElementById('totalLabels').textContent = totalLabels;
 
     const tbody = document.getElementById('previewTableBody');
@@ -462,11 +483,15 @@ document.getElementById('generateBtn').addEventListener('click', function() {
             document.getElementById('loadingSpinner').style.display = 'none';
 
             if (response.message && response.message.success) {
-                // Show success section with download link
+                // Setup download link
                 const downloadLink = document.getElementById('downloadLink');
                 downloadLink.href = response.message.file_url;
                 downloadLink.download = response.message.filename || 'labels.pdf';
 
+                // Auto-trigger download
+                downloadLink.click();
+
+                // Show success section
                 document.getElementById('successSection').style.display = 'block';
                 document.getElementById('previewSection').style.display = 'none';
 
@@ -494,6 +519,11 @@ document.getElementById('generateAnotherBtn').addEventListener('click', function
     document.getElementById('successSection').style.display = 'none';
     document.getElementById('previewSection').style.display = 'block';
     document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+});
+
+// Try again
+document.getElementById('tryAgainBtn').addEventListener('click', function() {
+    location.reload();
 });
 </script>
 {% endblock %}

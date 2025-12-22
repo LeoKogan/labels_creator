@@ -43,6 +43,7 @@
   "column_break_sku",
   "sku_font_type",
   "sku_font_size",
+  "sku_max_word_length",
   "product_name_tab",
   "show_product_name",
   "product_name_x_offset",
@@ -52,6 +53,7 @@
   "column_break_product",
   "product_name_font_type",
   "product_name_font_size",
+  "product_name_max_word_length",
   "price_tab",
   "show_price",
   "price_x_offset",
@@ -299,6 +301,14 @@
    "depends_on": "eval:doc.show_sku"
   },
   {
+   "fieldname": "sku_max_word_length",
+   "fieldtype": "Int",
+   "label": "Max Word Length (characters)",
+   "description": "Split words longer than this at character boundaries. Leave blank for no splitting.",
+   "default": "9",
+   "depends_on": "eval:doc.show_sku"
+  },
+  {
    "fieldname": "product_name_tab",
    "fieldtype": "Tab Break",
    "label": "Product Name"
@@ -356,6 +366,14 @@
    "fieldtype": "Int",
    "label": "Product Name Font Size (points)",
    "default": "6",
+   "depends_on": "eval:doc.show_product_name"
+  },
+  {
+   "fieldname": "product_name_max_word_length",
+   "fieldtype": "Int",
+   "label": "Max Word Length (characters)",
+   "description": "Split words longer than this at character boundaries. Leave blank for no splitting.",
+   "default": "9",
    "depends_on": "eval:doc.show_product_name"
   },
   {
