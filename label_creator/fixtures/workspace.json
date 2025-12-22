@@ -26,8 +26,8 @@
    "is_query_report": 0,
    "label": "Label Creator",
    "link_count": 0,
-   "link_to": "/label-creator",
-   "link_type": "URL",
+   "link_to": "label-creator",
+   "link_type": "Page",
    "onboard": 0,
    "type": "Link"
   }
@@ -54,8 +54,8 @@
    "color": "Blue",
    "format": "{}",
    "label": "Label Creator",
-   "link_to": "/label-creator",
-   "type": "URL"
+   "link_to": "label-creator",
+   "type": "Page"
   }
  ],
  "title": "Labels"
