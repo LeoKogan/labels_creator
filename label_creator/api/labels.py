@@ -25,22 +25,60 @@ def upload_and_process(files_json):
 
             # Parse CSV content
             lines = content.strip().split('\n')
+            if not lines:
+                return {
+                    "success": False,
+                    "message": f"File '{filename}' is empty"
+                }
+
             reader = csv.reader(lines)
             header = next(reader, None)
 
             if not header:
-                continue
+                return {
+                    "success": False,
+                    "message": f"File '{filename}' has no header row"
+                }
 
-            header_map = {col.strip(): idx for idx, col in enumerate(header)}
+            # Normalize header names (strip whitespace, lowercase)
+            header_map = {col.strip().lower(): idx for idx, col in enumerate(header)}
+
+            # Check for required fields
+            # Format 1: product, sku, quantity, display_price
+            format1_fields = {'product', 'sku', 'quantity', 'display_price'}
+            # Format 2: name, sku, retail_price
+            format2_fields = {'name', 'sku', 'retail_price'}
+
+            has_format1 = format1_fields.issubset(header_map)
+            has_format2 = format2_fields.issubset(header_map)
+
+            if not has_format1 and not has_format2:
+                # Neither format matches - provide helpful error message
+                missing_from_format1 = format1_fields - set(header_map.keys())
+                missing_from_format2 = format2_fields - set(header_map.keys())
+
+                return {
+                    "success": False,
+                    "message": f"File '{filename}' is missing required columns.\n\n"
+                               f"Expected Format 1 columns: product, sku, quantity, display_price\n"
+                               f"Missing: {', '.join(missing_from_format1)}\n\n"
+                               f"OR\n\n"
+                               f"Expected Format 2 columns: name, sku, retail_price\n"
+                               f"Missing: {', '.join(missing_from_format2)}\n\n"
+                               f"Found columns: {', '.join(header_map.keys())}"
+                }
 
             # Process File Type 1: product, sku, quantity, display_price
-            if {'product', 'sku', 'quantity', 'display_price'}.issubset(header_map):
+            if has_format1:
                 for row in reader:
                     try:
-                        sku = row[header_map['sku']]
-                        product = row[header_map['product']]
+                        sku = row[header_map['sku']].strip()
+                        product = row[header_map['product']].strip()
                         display_price = "{:.2f}".format(float(row[header_map['display_price']]))
                         quantity = int(row[header_map['quantity']])
+
+                        if not sku:  # Skip rows with empty SKU
+                            continue
 
                         if sku not in aggregated_content:
                             aggregated_content[sku] = {
@@ -55,18 +93,21 @@ def upload_and_process(files_json):
                         continue
 
             # Process File Type 2: name, sku, retail_price
-            elif {'name', 'sku', 'retail_price'}.issubset(header_map):
-                inventory_columns = [col for col in header if col.startswith('inventory_')]
+            elif has_format2:
+                inventory_columns = [col for col in header_map.keys() if col.startswith('inventory_')]
 
                 for row in reader:
                     try:
-                        sku = row[header_map['sku']]
-                        product_name = row[header_map['name']]
+                        sku = row[header_map['sku']].strip()
+                        product_name = row[header_map['name']].strip()
                         display_price = "{:.2f}".format(float(row[header_map['retail_price']]))
                         quantity = sum(
                             int(row[header_map[col]]) for col in inventory_columns
                             if col in header_map and row[header_map[col]].isdigit()
                         )
+
+                        if not sku:  # Skip rows with empty SKU
+                            continue
 
                         if sku not in aggregated_content:
                             aggregated_content[sku] = {
@@ -79,6 +120,12 @@ def upload_and_process(files_json):
                         total_labels += quantity
                     except (ValueError, IndexError):
                         continue
+
+        if not aggregated_content:
+            return {
+                "success": False,
+                "message": "No valid product data found in the uploaded file(s). Please check that your CSV contains valid data rows."
+            }
 
         processed_content = list(aggregated_content.values())
 
