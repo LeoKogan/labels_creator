@@ -1,28 +1,11 @@
 import frappe
-from frappe import _
 
 
-def after_install():
+def execute():
     """
-    Setup Label Creator after installation
+    Patch to create default label types for existing installations
     """
-    create_page_if_not_exists()
     create_default_label_types()
-
-
-def create_page_if_not_exists():
-    """
-    Ensure the Label Creator page exists
-    """
-    try:
-        if not frappe.db.exists("Page", "label-creator"):
-            frappe.logger().info("Label Creator page will be created from page definition")
-        else:
-            frappe.logger().info("Label Creator page already exists")
-
-    except Exception as e:
-        frappe.logger().error(f"Error checking Label Creator page: {str(e)}")
-        frappe.log_error(frappe.get_traceback(), "Label Creator Installation Error")
 
 
 def create_default_label_types():
@@ -132,13 +115,12 @@ def create_default_label_types():
                     **label_type_data
                 })
                 doc.insert(ignore_permissions=True)
-                frappe.logger().info(f"Created default label type: {label_type_data['label_type_name']}")
+                print(f"Created default label type: {label_type_data['label_type_name']}")
             else:
-                frappe.logger().info(f"Label type already exists: {label_type_data['label_type_name']}")
+                print(f"Label type already exists: {label_type_data['label_type_name']}")
 
         frappe.db.commit()
 
     except Exception as e:
-        frappe.logger().error(f"Error creating default label types: {str(e)}")
-        frappe.log_error(frappe.get_traceback(), "Label Type Creation Error")
-
+        frappe.log_error(frappe.get_traceback(), "Label Type Creation Patch Error")
+        raise
