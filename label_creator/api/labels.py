@@ -209,16 +209,20 @@ def get_label_types():
                 "qrcode_x_offset": lt.qrcode_x_offset or 0,
                 "qrcode_y_offset": lt.qrcode_y_offset or 0,
                 "qrcode_size_pts": lt.qrcode_size_pts or None,
+                "sku_sample": lt.get("sku_sample") or "SAM-PLE-SKU",
                 "sku_x_offset": lt.sku_x_offset or 0,
                 "sku_y_offset": lt.sku_y_offset or 0,
                 "sku_font_type": lt.get("sku_font_type") or "Helvetica",
                 "sku_font_size": lt.get("sku_font_size") or 7,
                 "sku_max_word_length": lt.get("sku_max_word_length") or 9,
+                "sku_text_align": lt.get("sku_text_align") or "Left",
+                "product_name_sample": lt.get("product_name_sample") or "Sample Product Name",
                 "product_name_x_offset": lt.get("product_name_x_offset") or 0,
                 "product_name_y_offset": lt.get("product_name_y_offset") or 0,
                 "product_name_font_type": lt.get("product_name_font_type") or "Helvetica",
                 "product_name_font_size": lt.get("product_name_font_size") or 6,
                 "product_name_max_word_length": lt.get("product_name_max_word_length") or 9,
+                "product_name_text_align": lt.get("product_name_text_align") or "Left",
                 "price_x_offset": lt.price_x_offset or 0,
                 "price_y_offset": lt.price_y_offset or 0,
                 "price_rotation": lt.price_rotation or 0,
@@ -266,10 +270,10 @@ def preview_label(label_type_config_json):
         # Parse the configuration
         config = json.loads(label_type_config_json)
 
-        # Sample data for preview
+        # Sample data for preview - use sample fields from config if available
         sample_data = {
-            'sku': 'SAMPLE-123',
-            'product': 'Sample Product',
+            'sku': config.get('sku_sample', 'SAM-PLE-SKU'),
+            'product': config.get('product_name_sample', 'Sample Product Name'),
             'display_price': '29.99'
         }
 
