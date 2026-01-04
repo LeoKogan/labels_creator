@@ -16,6 +16,8 @@ def update_existing_label_types():
     - product_name_sample
     - sku_text_align
     - product_name_text_align
+    - price_sample
+    - currency
     """
     try:
         # Get all existing Label Type documents
@@ -53,6 +55,16 @@ def update_existing_label_types():
                 # Add product_name_text_align if missing
                 if not doc.get("product_name_text_align"):
                     doc.product_name_text_align = "Left"
+                    modified = True
+
+                # Add price_sample if missing
+                if not doc.get("price_sample"):
+                    doc.price_sample = 29.99
+                    modified = True
+
+                # Add currency if missing
+                if not doc.get("currency"):
+                    doc.currency = "USD"
                     modified = True
 
                 # Save the document if any changes were made

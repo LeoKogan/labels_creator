@@ -11,6 +11,8 @@ The following fields were added to the Label Type doctype:
 - `product_name_sample`: Sample product name for visualization (default: "Sample Product Name")
 - `sku_text_align`: Text alignment for SKU (Left/Centre/Right)
 - `product_name_text_align`: Text alignment for Product Name (Left/Centre/Right)
+- `price_sample`: Sample price for visualization (default: 29.99)
+- `currency`: Currency for price display (default: "USD", linked to Currency doctype)
 
 ### Automatic Migration
 
@@ -43,6 +45,8 @@ For each existing Label Type record:
 - If `product_name_sample` is missing → set to "Sample Product Name"
 - If `sku_text_align` is missing → set to "Left"
 - If `product_name_text_align` is missing → set to "Left"
+- If `price_sample` is missing → set to 29.99
+- If `currency` is missing → set to "USD"
 
 ### Verification
 
@@ -63,6 +67,8 @@ After running the migration, you can verify the updates by:
    print(f"Product Name Sample: {lt.product_name_sample}")
    print(f"SKU Text Align: {lt.sku_text_align}")
    print(f"Product Name Text Align: {lt.product_name_text_align}")
+   print(f"Price Sample: {lt.price_sample}")
+   print(f"Currency: {lt.currency}")
    ```
 
 ### Customizing Sample Values
@@ -72,9 +78,14 @@ After migration, you can customize the sample values for each Label Type:
 1. Open the Label Type record in ERPNext
 2. Go to the **SKU** tab
 3. Update the "Sample SKU (for visualization)" field
-4. Go to the **Product Name** tab
-5. Update the "Sample Product Name (for visualization)" field
-6. Save the record
+4. Update the "SKU Text Alignment" (Left/Centre/Right)
+5. Go to the **Product Name** tab
+6. Update the "Sample Product Name (for visualization)" field
+7. Update the "Product Name Text Alignment" (Left/Centre/Right)
+8. Go to the **Price** tab
+9. Update the "Sample Price (for visualization)" field
+10. Select the appropriate "Currency" from the dropdown
+11. Save the record
 
 These sample values will be used in the label preview to help you visualize how your labels will look.
 

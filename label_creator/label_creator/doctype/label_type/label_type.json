@@ -60,6 +60,8 @@
   "product_name_text_align",
   "price_tab",
   "show_price",
+  "price_sample",
+  "currency",
   "price_x_offset",
   "price_x_offset_pct",
   "price_y_offset",
@@ -260,7 +262,7 @@
    "fieldtype": "Data",
    "label": "Sample SKU (for visualization)",
    "default": "SAM-PLE-SKU",
-   "description": "Sample SKU text to visualize label layout",
+   "description": "Sample SKU text to visualize Preview Label",
    "depends_on": "eval:doc.show_sku"
   },
   {
@@ -344,7 +346,7 @@
    "fieldtype": "Data",
    "label": "Sample Product Name (for visualization)",
    "default": "Sample Product Name",
-   "description": "Sample product name text to visualize label layout",
+   "description": "Sample product name text to visualize Preview Label",
    "depends_on": "eval:doc.show_product_name"
   },
   {
@@ -422,6 +424,23 @@
    "fieldtype": "Check",
    "label": "Show Price",
    "default": "1"
+  },
+  {
+   "fieldname": "price_sample",
+   "fieldtype": "Currency",
+   "label": "Sample Price (for visualization)",
+   "default": "29.99",
+   "description": "Sample price to visualize Preview Label",
+   "depends_on": "eval:doc.show_price"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "default": "USD",
+   "description": "Currency for price display",
+   "depends_on": "eval:doc.show_price"
   },
   {
    "fieldname": "price_x_offset",

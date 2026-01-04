@@ -54,6 +54,16 @@ def update_existing_label_types():
                     doc.product_name_text_align = "Left"
                     modified = True
 
+                # Add price_sample if missing
+                if not doc.get("price_sample"):
+                    doc.price_sample = 29.99
+                    modified = True
+
+                # Add currency if missing
+                if not doc.get("currency"):
+                    doc.currency = "USD"
+                    modified = True
+
                 # Save the document if any changes were made
                 if modified:
                     doc.save(ignore_permissions=True)
@@ -139,6 +149,8 @@ def create_default_label_types():
                 "product_name_max_word_length": 12,
                 "product_name_text_align": "Left",
                 "show_price": 1,
+                "price_sample": 29.99,
+                "currency": "USD",
                 "price_x_offset": 2.755,
                 "price_x_offset_pct": 95.0,
                 "price_y_offset": 0.22,
@@ -190,6 +202,8 @@ def create_default_label_types():
                 "product_name_max_word_length": 0,
                 "product_name_text_align": "Left",
                 "show_price": 1,
+                "price_sample": 29.99,
+                "currency": "USD",
                 "price_x_offset": 0.05,
                 "price_x_offset_pct": 10.0,
                 "price_y_offset": 0.8,
@@ -241,6 +255,8 @@ def create_default_label_types():
                 "product_name_max_word_length": 10,
                 "product_name_text_align": "Left",
                 "show_price": 1,
+                "price_sample": 29.99,
+                "currency": "USD",
                 "price_x_offset": 0.05,
                 "price_x_offset_pct": 10.0,
                 "price_y_offset": 0.8,

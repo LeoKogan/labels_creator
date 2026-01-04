@@ -223,6 +223,8 @@ def get_label_types():
                 "product_name_font_size": lt.get("product_name_font_size") or 6,
                 "product_name_max_word_length": lt.get("product_name_max_word_length") or 9,
                 "product_name_text_align": lt.get("product_name_text_align") or "Left",
+                "price_sample": lt.get("price_sample") or 29.99,
+                "currency": lt.get("currency") or "USD",
                 "price_x_offset": lt.price_x_offset or 0,
                 "price_y_offset": lt.price_y_offset or 0,
                 "price_rotation": lt.price_rotation or 0,
@@ -274,7 +276,7 @@ def preview_label(label_type_config_json):
         sample_data = {
             'sku': config.get('sku_sample', 'SAM-PLE-SKU'),
             'product': config.get('product_name_sample', 'Sample Product Name'),
-            'display_price': '29.99'
+            'display_price': str(config.get('price_sample', 29.99))
         }
 
         # Get page and label dimensions
