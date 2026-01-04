@@ -8,6 +8,50 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph
 
 
+def get_currency_symbol(currency_code):
+    """
+    Get currency symbol for a given currency code
+    """
+    currency_symbols = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'JPY': '¥',
+        'CNY': '¥',
+        'INR': '₹',
+        'CAD': 'C$',
+        'AUD': 'A$',
+        'CHF': 'CHF',
+        'SEK': 'kr',
+        'NZD': 'NZ$',
+        'MXN': '$',
+        'SGD': 'S$',
+        'HKD': 'HK$',
+        'NOK': 'kr',
+        'KRW': '₩',
+        'TRY': '₺',
+        'RUB': '₽',
+        'BRL': 'R$',
+        'ZAR': 'R',
+        'DKK': 'kr',
+        'PLN': 'zł',
+        'THB': '฿',
+        'IDR': 'Rp',
+        'HUF': 'Ft',
+        'CZK': 'Kč',
+        'ILS': '₪',
+        'CLP': '$',
+        'PHP': '₱',
+        'AED': 'د.إ',
+        'COP': '$',
+        'SAR': '﷼',
+        'MYR': 'RM',
+        'RON': 'lei'
+    }
+
+    return currency_symbols.get(currency_code, currency_code + ' ')
+
+
 def get_label_dimensions():
     """Load label dimensions from Label Type DocType"""
     try:
@@ -264,6 +308,10 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
     price_font_type = config.get("price_font_type", "Helvetica-Bold")
     price_font_size = config.get("price_font_size", 10)
 
+    # Get currency symbol
+    currency_code = config.get("currency", "USD")
+    currency_symbol = get_currency_symbol(currency_code)
+
     # Retrieve (or generate) the QR code image
     qr_path = get_or_create_qr(sku, qr_dir)
 
@@ -319,7 +367,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
         # Draw the price if enabled
         if config.get("show_price", True):
-            price_text = f"${float(price):.2f}"
+            price_text = f"{currency_symbol}{float(price):.2f}"
             price_x = x + price_x_offset
             price_y = y - price_y_offset
             price_rotation = config.get("price_rotation", 90)
@@ -380,7 +428,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
             price_text_x = x + price_x_offset
             price_text_y = y - price_y_offset - price_font_size
             c.setFont(price_font_type, price_font_size)
-            c.drawString(price_text_x, price_text_y, f"${float(price):.2f}")
+            c.drawString(price_text_x, price_text_y, f"{currency_symbol}{float(price):.2f}")
 
 
 def create_labels_pdf(labels_data, label_type):

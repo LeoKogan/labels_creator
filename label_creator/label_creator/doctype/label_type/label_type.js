@@ -296,18 +296,24 @@ function preview_label(frm) {
 		qrcode_y_offset: frm.doc.qrcode_y_offset || 0,
 		qrcode_size_pts: frm.doc.qrcode_size_pts || null,
 		show_sku: frm.doc.show_sku || 1,
+		sku_sample: frm.doc.sku_sample || 'SAM-PLE-SKU',
 		sku_x_offset: frm.doc.sku_x_offset || 0,
 		sku_y_offset: frm.doc.sku_y_offset || 0,
 		sku_font_type: frm.doc.sku_font_type || 'Helvetica',
 		sku_font_size: frm.doc.sku_font_size || 7,
 		sku_max_word_length: frm.doc.sku_max_word_length || null,
+		sku_text_align: frm.doc.sku_text_align || 'Left',
 		show_product_name: frm.doc.show_product_name || 0,
+		product_name_sample: frm.doc.product_name_sample || 'Sample Product Name',
 		product_name_x_offset: frm.doc.product_name_x_offset || 0,
 		product_name_y_offset: frm.doc.product_name_y_offset || 0,
 		product_name_font_type: frm.doc.product_name_font_type || 'Helvetica',
 		product_name_font_size: frm.doc.product_name_font_size || 6,
 		product_name_max_word_length: frm.doc.product_name_max_word_length || null,
+		product_name_text_align: frm.doc.product_name_text_align || 'Left',
 		show_price: frm.doc.show_price || 1,
+		price_sample: frm.doc.price_sample || 29.99,
+		currency: frm.doc.currency || 'USD',
 		price_x_offset: frm.doc.price_x_offset || 0,
 		price_y_offset: frm.doc.price_y_offset || 0,
 		price_rotation: frm.doc.price_rotation || 0,
@@ -361,7 +367,7 @@ function preview_label(frm) {
 									alt="Label Preview">
 							</div>
 							<p style="margin-top: 15px; color: #888; font-size: 12px;">
-								<strong>Sample Data:</strong> SKU: SAMPLE-123, Product: Sample Product, Price: $29.99<br>
+								<strong>Sample Data:</strong> SKU: ${frm.doc.sku_sample || 'SAM-PLE-SKU'}, Product: ${frm.doc.product_name_sample || 'Sample Product'}, Price: ${frm.doc.price_sample || '29.99'}<br>
 								Preview shows full page with all labels based on current configuration
 							</p>
 						</div>
@@ -371,7 +377,7 @@ function preview_label(frm) {
 					html = `
 						<div style="text-align: center; padding: 20px;">
 							<p style="margin-bottom: 15px; color: #666;">
-								<strong>Sample Data:</strong> SKU: SAMPLE-123, Product: Sample Product, Price: $29.99
+								<strong>Sample Data:</strong> SKU: ${frm.doc.sku_sample || 'SAM-PLE-SKU'}, Product: ${frm.doc.product_name_sample || 'Sample Product'}, Price: ${frm.doc.price_sample || '29.99'}
 							</p>
 							<iframe
 								src="data:application/pdf;base64,${r.message.pdf_data}"
