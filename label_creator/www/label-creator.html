@@ -47,31 +47,30 @@
                     <h5 class="card-title">Label Preview</h5>
                     <p>Total Labels: <strong id="totalLabels">0</strong></p>
 
-                    <div class="row mb-3 align-items-end">
+                    <div class="row mb-3 align-items-start">
                         <div class="col-md-4">
                             <label for="labelType" class="form-label">Label Type</label>
                             <select id="labelType" class="form-select">
                                 <option value="">Loading...</option>
                             </select>
                         </div>
-                        <div class="col-md-8">
-                            <button id="generateBtn" class="btn btn-success me-2">
-                                Generate Labels (PDF)
-                            </button>
-                            <button id="startOverBtn" class="btn btn-secondary">
-                                Start Over
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Label Type Preview -->
-                    <div id="labelTypePreview" class="mb-3" style="display: none;">
-                        <div class="card">
-                            <div class="card-body">
-                                <h6 class="card-title">Label Type Preview</h6>
-                                <div class="text-center">
-                                    <img id="labelTypePreviewImage" src="" alt="Label Preview" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                        <div class="col-md-4">
+                            <!-- Label Type Preview - shown next to selector -->
+                            <div id="labelTypePreview" style="display: none;">
+                                <label class="form-label">Sample Label Preview</label>
+                                <div class="text-center" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px; background-color: #f8f9fa;">
+                                    <img id="labelTypePreviewImage" src="" alt="Label Preview" style="max-width: 100%; max-height: 200px; object-fit: contain;">
                                 </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div>
+                                <button id="generateBtn" class="btn btn-success me-2">
+                                    Generate Labels (PDF)
+                                </button>
+                                <button id="startOverBtn" class="btn btn-secondary">
+                                    Start Over
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -208,9 +207,18 @@
     object-fit: contain;
 }
 
-/* Label type preview styling */
+/* Label type preview styling - shown next to selector */
+#labelTypePreview {
+    min-height: 150px;
+}
+
 #labelTypePreview img {
-    max-height: 400px;
+    max-height: 200px;
+    transition: opacity 0.3s ease-in-out;
+}
+
+#labelTypePreview img.loading {
+    opacity: 0.5;
 }
 </style>
 {% endblock %}
@@ -318,6 +326,14 @@ function loadLabelTypePreview(labelTypeName) {
 
     console.log('Label type config:', labelTypeConfig);
 
+    const previewSection = document.getElementById('labelTypePreview');
+    const previewImage = document.getElementById('labelTypePreviewImage');
+
+    // Show preview section with loading state
+    previewSection.style.display = 'block';
+    previewImage.classList.add('loading');
+    previewImage.alt = 'Loading preview...';
+
     frappe.call({
         method: 'label_creator.api.labels.preview_label',
         args: {
@@ -326,10 +342,9 @@ function loadLabelTypePreview(labelTypeName) {
         callback: function(response) {
             console.log('Label type preview response:', response);
 
-            if (response.message && response.message.success) {
-                const previewSection = document.getElementById('labelTypePreview');
-                const previewImage = document.getElementById('labelTypePreviewImage');
+            previewImage.classList.remove('loading');
 
+            if (response.message && response.message.success) {
                 if (response.message.image_type === 'png') {
                     previewImage.src = 'data:image/png;base64,' + response.message.image_data;
                     console.log('Loaded PNG preview');
@@ -337,14 +352,16 @@ function loadLabelTypePreview(labelTypeName) {
                     previewImage.src = 'data:application/pdf;base64,' + response.message.pdf_data;
                     console.log('Loaded PDF preview');
                 }
-
-                previewSection.style.display = 'block';
+                previewImage.alt = 'Label Preview';
             } else {
                 console.error('Label type preview failed:', response.message);
+                previewImage.alt = 'Preview failed';
             }
         },
         error: function(error) {
             console.error('Error loading label type preview:', error);
+            previewImage.classList.remove('loading');
+            previewImage.alt = 'Error loading preview';
         }
     });
 }
