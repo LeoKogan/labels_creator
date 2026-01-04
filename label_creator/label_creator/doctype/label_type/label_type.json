@@ -36,6 +36,7 @@
   "qrcode_size_pts",
   "sku_tab",
   "show_sku",
+  "sku_sample",
   "sku_x_offset",
   "sku_x_offset_pct",
   "sku_y_offset",
@@ -44,8 +45,10 @@
   "sku_font_type",
   "sku_font_size",
   "sku_max_word_length",
+  "sku_text_align",
   "product_name_tab",
   "show_product_name",
+  "product_name_sample",
   "product_name_x_offset",
   "product_name_x_offset_pct",
   "product_name_y_offset",
@@ -54,6 +57,7 @@
   "product_name_font_type",
   "product_name_font_size",
   "product_name_max_word_length",
+  "product_name_text_align",
   "price_tab",
   "show_price",
   "price_x_offset",
@@ -252,6 +256,14 @@
    "default": "1"
   },
   {
+   "fieldname": "sku_sample",
+   "fieldtype": "Data",
+   "label": "Sample SKU (for visualization)",
+   "default": "SAM-PLE-SKU",
+   "description": "Sample SKU text to visualize label layout",
+   "depends_on": "eval:doc.show_sku"
+  },
+  {
    "fieldname": "sku_x_offset",
    "fieldtype": "Float",
    "label": "SKU X Offset (inches)",
@@ -309,6 +321,14 @@
    "depends_on": "eval:doc.show_sku"
   },
   {
+   "fieldname": "sku_text_align",
+   "fieldtype": "Select",
+   "label": "SKU Text Alignment",
+   "options": "Left\nCentre\nRight",
+   "default": "Left",
+   "depends_on": "eval:doc.show_sku"
+  },
+  {
    "fieldname": "product_name_tab",
    "fieldtype": "Tab Break",
    "label": "Product Name"
@@ -318,6 +338,14 @@
    "fieldtype": "Check",
    "label": "Show Product Name",
    "default": "0"
+  },
+  {
+   "fieldname": "product_name_sample",
+   "fieldtype": "Data",
+   "label": "Sample Product Name (for visualization)",
+   "default": "Sample Product Name",
+   "description": "Sample product name text to visualize label layout",
+   "depends_on": "eval:doc.show_product_name"
   },
   {
    "fieldname": "product_name_x_offset",
@@ -374,6 +402,14 @@
    "label": "Max Word Length (characters)",
    "description": "Split words longer than this at character boundaries. Leave blank for no splitting.",
    "default": "9",
+   "depends_on": "eval:doc.show_product_name"
+  },
+  {
+   "fieldname": "product_name_text_align",
+   "fieldtype": "Select",
+   "label": "Product Name Text Alignment",
+   "options": "Left\nCentre\nRight",
+   "default": "Left",
    "depends_on": "eval:doc.show_product_name"
   },
   {
