@@ -64,6 +64,18 @@
                         </div>
                     </div>
 
+                    <!-- Label Type Preview -->
+                    <div id="labelTypePreview" class="mb-3" style="display: none;">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">Label Type Preview</h6>
+                                <div class="text-center">
+                                    <img id="labelTypePreviewImage" src="" alt="Label Preview" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-striped" id="previewTable">
                             <thead>
@@ -71,6 +83,7 @@
                                     <th style="width: 50px;">
                                         <input type="checkbox" id="selectAll" checked>
                                     </th>
+                                    <th style="width: 100px;">Preview</th>
                                     <th>SKU</th>
                                     <th>Product</th>
                                     <th style="width: 150px;">Price</th>
@@ -175,12 +188,29 @@
 }
 
 /* SKU column word wrapping - break on hyphens and word boundaries */
-#previewTable tbody td:nth-child(2) {
+#previewTable tbody td:nth-child(3) {
     overflow-wrap: anywhere;
     word-break: normal;
     white-space: normal;
     max-width: 200px;
     min-width: 80px;
+}
+
+/* Label preview cell styling */
+.label-preview-cell {
+    text-align: center;
+    vertical-align: middle;
+    padding: 8px !important;
+}
+
+.label-preview-cell img {
+    display: inline-block;
+    object-fit: contain;
+}
+
+/* Label type preview styling */
+#labelTypePreview img {
+    max-height: 400px;
 }
 </style>
 {% endblock %}
@@ -229,17 +259,19 @@ document.addEventListener('DOMContentLoaded', function() {
     loadLabelTypes();
 });
 
+let labelTypesData = {};
+
 function loadLabelTypes() {
     frappe.call({
         method: 'label_creator.api.labels.get_label_types',
         args: {},
         callback: function(response) {
             if (response.message && response.message.success) {
-                const labelTypes = response.message.label_types;
+                labelTypesData = response.message.label_types;
                 const select = document.getElementById('labelType');
                 select.innerHTML = '';
 
-                for (const [key, value] of Object.entries(labelTypes)) {
+                for (const [key, value] of Object.entries(labelTypesData)) {
                     const option = document.createElement('option');
                     option.value = key;
                     // Use the 'name' field if available, otherwise show key with dimensions
@@ -247,11 +279,60 @@ function loadLabelTypes() {
                     option.textContent = displayName;
                     select.appendChild(option);
                 }
+
+                // Add event listener to show preview when label type changes
+                select.addEventListener('change', function() {
+                    if (this.value) {
+                        loadLabelTypePreview(this.value);
+                        // Refresh row previews if data is loaded
+                        if (processedContent.length > 0) {
+                            refreshRowPreviews();
+                        }
+                    } else {
+                        document.getElementById('labelTypePreview').style.display = 'none';
+                    }
+                });
+
+                // Load preview for first option if available
+                if (Object.keys(labelTypesData).length > 0) {
+                    const firstKey = Object.keys(labelTypesData)[0];
+                    select.value = firstKey;
+                    loadLabelTypePreview(firstKey);
+                }
             }
         },
         error: function(error) {
             console.error('Error loading label types:', error);
             alert('Error loading label types');
+        }
+    });
+}
+
+function loadLabelTypePreview(labelTypeName) {
+    const labelTypeConfig = labelTypesData[labelTypeName];
+    if (!labelTypeConfig) return;
+
+    frappe.call({
+        method: 'label_creator.api.labels.preview_label',
+        args: {
+            label_type_config_json: JSON.stringify(labelTypeConfig)
+        },
+        callback: function(response) {
+            if (response.message && response.message.success) {
+                const previewSection = document.getElementById('labelTypePreview');
+                const previewImage = document.getElementById('labelTypePreviewImage');
+
+                if (response.message.image_type === 'png') {
+                    previewImage.src = 'data:image/png;base64,' + response.message.image_data;
+                } else if (response.message.pdf_data) {
+                    previewImage.src = 'data:application/pdf;base64,' + response.message.pdf_data;
+                }
+
+                previewSection.style.display = 'block';
+            }
+        },
+        error: function(error) {
+            console.error('Error loading label type preview:', error);
         }
     });
 }
@@ -355,6 +436,13 @@ function displayPreview(content, totalLabels) {
         cbCell.appendChild(checkbox);
         tr.appendChild(cbCell);
 
+        // Preview cell
+        const previewCell = document.createElement('td');
+        previewCell.className = 'label-preview-cell';
+        previewCell.setAttribute('data-index', index);
+        previewCell.innerHTML = '<div class="text-muted" style="font-size: 12px;">Loading...</div>';
+        tr.appendChild(previewCell);
+
         // SKU cell
         const skuCell = document.createElement('td');
         skuCell.textContent = item.sku;
@@ -415,6 +503,18 @@ function displayPreview(content, totalLabels) {
         input.addEventListener('input', updateTotalLabels);
     });
 
+    // Add event listeners to price inputs to refresh preview when price changes
+    document.querySelectorAll('.price-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const index = this.getAttribute('data-index');
+            const item = processedContent[index];
+            if (item) {
+                const productNameElement = document.querySelectorAll('td')[index * 6 + 3]; // Adjust based on column count
+                loadSingleLabelPreview(index, item.sku, item.product, this.value);
+            }
+        });
+    });
+
     // Select/deselect all checkbox
     const selectAllCheckbox = document.getElementById('selectAll');
     selectAllCheckbox.checked = true;
@@ -427,6 +527,73 @@ function displayPreview(content, totalLabels) {
 
     document.getElementById('previewSection').style.display = 'block';
     window.scrollTo(0, document.body.scrollHeight);
+
+    // Load individual label previews for each row
+    refreshRowPreviews();
+}
+
+function loadSingleLabelPreview(index, sku, productName, price) {
+    const labelType = document.getElementById('labelType').value;
+    if (!labelType) {
+        return;
+    }
+
+    frappe.call({
+        method: 'label_creator.api.labels.preview_single_label',
+        args: {
+            label_type: labelType,
+            sku: sku,
+            product_name: productName,
+            price: price
+        },
+        callback: function(response) {
+            if (response.message && response.message.success) {
+                const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
+                if (previewCell) {
+                    const img = document.createElement('img');
+                    img.style.maxWidth = '80px';
+                    img.style.maxHeight = '80px';
+                    img.style.border = '1px solid #ddd';
+                    img.style.borderRadius = '4px';
+                    img.alt = 'Label Preview';
+
+                    if (response.message.image_type === 'png') {
+                        img.src = 'data:image/png;base64,' + response.message.image_data;
+                    } else if (response.message.pdf_data) {
+                        img.src = 'data:application/pdf;base64,' + response.message.pdf_data;
+                    }
+
+                    previewCell.innerHTML = '';
+                    previewCell.appendChild(img);
+                }
+            } else {
+                const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
+                if (previewCell) {
+                    previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;">Error</div>';
+                }
+            }
+        },
+        error: function(error) {
+            console.error('Error loading single label preview:', error);
+            const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
+            if (previewCell) {
+                previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;">Error</div>';
+            }
+        }
+    });
+}
+
+function refreshRowPreviews() {
+    const labelType = document.getElementById('labelType').value;
+    if (!labelType || processedContent.length === 0) {
+        return;
+    }
+
+    processedContent.forEach((item, index) => {
+        const priceInput = document.querySelector(`.price-input[data-index="${index}"]`);
+        const price = priceInput ? priceInput.value : item.display_price;
+        loadSingleLabelPreview(index, item.sku, item.product, price);
+    });
 }
 
 function updateTotalLabels() {
