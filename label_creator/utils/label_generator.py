@@ -75,10 +75,14 @@ def get_label_dimensions():
                 "margin_bottom": lt.margin_bottom or 0,
                 "margin_left": lt.margin_left or 0,
                 "margin_right": lt.margin_right or 0,
+                "offset_input_mode": lt.get("offset_input_mode") or "Percentage",
                 "show_qr_code": lt.get("show_qr_code", 1),
                 "qrcode_x_offset": lt.qrcode_x_offset or 0,
                 "qrcode_y_offset": lt.qrcode_y_offset or 0,
-                "qrcode_size_pts": lt.qrcode_size_pts or None,
+                "qrcode_x_offset_pct": lt.get("qrcode_x_offset_pct") or 0,
+                "qrcode_y_offset_pct": lt.get("qrcode_y_offset_pct") or 0,
+                "qrcode_size_inch": lt.get("qrcode_size_inch") or None,
+                "qrcode_size_pct": lt.get("qrcode_size_pct") or None,
                 "show_sku": lt.get("show_sku", 1),
                 "sku_sample": lt.get("sku_sample") or "SAM-PLE-SKU",
                 "sku_x_offset": lt.sku_x_offset or 0,
@@ -86,7 +90,7 @@ def get_label_dimensions():
                 "sku_font_type": lt.get("sku_font_type") or "Helvetica",
                 "sku_font_size": lt.get("sku_font_size") or 7,
                 "sku_max_word_length": lt.get("sku_max_word_length") or 9,
-                "sku_text_align": lt.get("sku_text_align") or "Left",
+                "sku_text_align": lt.get("sku_text_align") or "Centre",
                 "show_product_name": lt.get("show_product_name", 0),
                 "product_name_sample": lt.get("product_name_sample") or "Sample Product Name",
                 "product_name_x_offset": lt.get("product_name_x_offset") or 0,
@@ -97,7 +101,7 @@ def get_label_dimensions():
                 "product_name_text_align": lt.get("product_name_text_align") or "Left",
                 "show_price": lt.get("show_price", 1),
                 "price_sample": lt.get("price_sample") or 29.99,
-                "currency": lt.get("currency") or "USD",
+                "currency": lt.get("currency") or "CAD",
                 "price_x_offset": lt.price_x_offset or 0,
                 "price_y_offset": lt.price_y_offset or 0,
                 "price_rotation": lt.price_rotation or 0,
@@ -297,7 +301,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
     sku_font_type = config.get("sku_font_type", "Helvetica")
     sku_font_size = config.get("sku_font_size", 7)
     sku_max_word_length = config.get("sku_max_word_length")
-    sku_text_align = config.get("sku_text_align", "Left")
+    sku_text_align = config.get("sku_text_align", "Centre")
     product_name_font_type = config.get("product_name_font_type", "Helvetica")
     product_name_font_size = config.get("product_name_font_size", 6)
     product_name_max_word_length = config.get("product_name_max_word_length")
@@ -306,7 +310,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
     price_font_size = config.get("price_font_size", 10)
 
     # Get currency information from ERPNext Currency doctype
-    currency_code = config.get("currency", "USD")
+    currency_code = config.get("currency", "CAD")
     currency_info = get_currency_info(currency_code)
 
     # Retrieve (or generate) the QR code image
@@ -318,7 +322,22 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
         # Draw the QR code if enabled
         if config.get("show_qr_code", True):
-            qr_size_pts = label_height_pts * 0.8  # 80% of label height
+            # Calculate QR code size based on offset input mode
+            offset_mode = config.get("offset_input_mode", "Percentage")
+            if offset_mode == "Inches":
+                # Use absolute size if specified, otherwise auto-calculate
+                qr_size_inch = config.get("qrcode_size_inch")
+                if qr_size_inch:
+                    qr_size_pts = qr_size_inch * inch
+                else:
+                    qr_size_pts = label_height_pts * 0.8  # Default: 80% of label height
+            else:  # Percentage mode
+                # Use percentage if specified, otherwise auto-calculate
+                qr_size_pct = config.get("qrcode_size_pct")
+                if qr_size_pct:
+                    qr_size_pts = (qr_size_pct / 100.0) * label_width_pts
+                else:
+                    qr_size_pts = label_height_pts * 0.8  # Default: 80% of label height
 
             # Position from left edge + offset, and from top edge - offset
             # (subtract qr_size_pts because drawImage uses bottom-left corner)
@@ -378,7 +397,22 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
         # Draw QR code if enabled
         if config.get("show_qr_code", True):
-            qr_size_pts = min(label_width_pts, label_height_pts * 0.4)
+            # Calculate QR code size based on offset input mode
+            offset_mode = config.get("offset_input_mode", "Percentage")
+            if offset_mode == "Inches":
+                # Use absolute size if specified, otherwise auto-calculate
+                qr_size_inch = config.get("qrcode_size_inch")
+                if qr_size_inch:
+                    qr_size_pts = qr_size_inch * inch
+                else:
+                    qr_size_pts = min(label_width_pts, label_height_pts * 0.4)  # Default: smaller of width or 40% height
+            else:  # Percentage mode
+                # Use percentage if specified, otherwise auto-calculate
+                qr_size_pct = config.get("qrcode_size_pct")
+                if qr_size_pct:
+                    qr_size_pts = (qr_size_pct / 100.0) * label_width_pts
+                else:
+                    qr_size_pts = min(label_width_pts, label_height_pts * 0.4)  # Default: smaller of width or 40% height
 
             # Position purely from offsets (no automatic centering)
             qr_x = x + qr_x_offset

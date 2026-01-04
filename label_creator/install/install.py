@@ -46,7 +46,7 @@ def update_existing_label_types():
 
                 # Add sku_text_align if missing
                 if not doc.get("sku_text_align"):
-                    doc.sku_text_align = "Left"
+                    doc.sku_text_align = "Centre"
                     modified = True
 
                 # Add product_name_text_align if missing
@@ -61,7 +61,7 @@ def update_existing_label_types():
 
                 # Add currency if missing
                 if not doc.get("currency"):
-                    doc.currency = "USD"
+                    doc.currency = "CAD"
                     modified = True
 
                 # Save the document if any changes were made
