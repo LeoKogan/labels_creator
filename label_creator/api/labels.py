@@ -259,11 +259,12 @@ def preview_single_label(label_type, sku, product_name, price):
     """
     Generate a preview image of a single label for a specific product
     Used for showing individual product label previews in the Label Creator UI
+    Uses the same draw_label function as actual label generation
     """
     try:
         import io
         import base64
-        from label_creator.utils.label_generator import draw_label, get_or_create_qr
+        from label_creator.utils.label_generator import draw_label, get_or_create_qr, build_config_from_label_type
         from reportlab.lib.units import inch
 
         # Try to import PyMuPDF for PDF to image conversion
@@ -273,50 +274,9 @@ def preview_single_label(label_type, sku, product_name, price):
         except ImportError:
             has_pymupdf = False
 
-        # Get label type configuration
+        # Get label type configuration using shared function
         label_type_doc = frappe.get_doc("Label Type", label_type)
-
-        # Build configuration from doctype
-        config = {
-            "label_width": label_type_doc.label_width,
-            "label_height": label_type_doc.label_height,
-            "label_orientation": label_type_doc.label_orientation or "portrait",
-            "offset_input_mode": label_type_doc.get("offset_input_mode") or "Percentage",
-            "qrcode_x_offset": label_type_doc.qrcode_x_offset or 0,
-            "qrcode_y_offset": label_type_doc.qrcode_y_offset or 0,
-            "qrcode_x_offset_pct": label_type_doc.get("qrcode_x_offset_pct") or 0,
-            "qrcode_y_offset_pct": label_type_doc.get("qrcode_y_offset_pct") or 0,
-            "qrcode_size_inch": label_type_doc.get("qrcode_size_inch") or None,
-            "qrcode_size_pct": label_type_doc.get("qrcode_size_pct") or None,
-            "sku_x_offset": label_type_doc.sku_x_offset or 0,
-            "sku_y_offset": label_type_doc.sku_y_offset or 0,
-            "sku_x_offset_pct": label_type_doc.get("sku_x_offset_pct") or 0,
-            "sku_y_offset_pct": label_type_doc.get("sku_y_offset_pct") or 0,
-            "sku_font_type": label_type_doc.get("sku_font_type") or "Helvetica",
-            "sku_font_size": label_type_doc.get("sku_font_size") or 7,
-            "sku_max_word_length": label_type_doc.get("sku_max_word_length") or 9,
-            "sku_text_align": label_type_doc.get("sku_text_align") or "Centre",
-            "product_name_x_offset": label_type_doc.get("product_name_x_offset") or 0,
-            "product_name_y_offset": label_type_doc.get("product_name_y_offset") or 0,
-            "product_name_x_offset_pct": label_type_doc.get("product_name_x_offset_pct") or 0,
-            "product_name_y_offset_pct": label_type_doc.get("product_name_y_offset_pct") or 0,
-            "product_name_font_type": label_type_doc.get("product_name_font_type") or "Helvetica",
-            "product_name_font_size": label_type_doc.get("product_name_font_size") or 6,
-            "product_name_max_word_length": label_type_doc.get("product_name_max_word_length") or 9,
-            "product_name_text_align": label_type_doc.get("product_name_text_align") or "Left",
-            "currency": label_type_doc.get("currency") or "CAD",
-            "price_x_offset": label_type_doc.price_x_offset or 0,
-            "price_y_offset": label_type_doc.price_y_offset or 0,
-            "price_x_offset_pct": label_type_doc.get("price_x_offset_pct") or 0,
-            "price_y_offset_pct": label_type_doc.get("price_y_offset_pct") or 0,
-            "price_rotation": label_type_doc.price_rotation or 0,
-            "price_font_type": label_type_doc.get("price_font_type") or "Helvetica-Bold",
-            "price_font_size": label_type_doc.get("price_font_size") or 8,
-            "show_qr_code": label_type_doc.get("show_qr_code", 1),
-            "show_sku": label_type_doc.get("show_sku", 1),
-            "show_product_name": label_type_doc.show_product_name or 0,
-            "show_price": label_type_doc.get("show_price", 1)
-        }
+        config = build_config_from_label_type(label_type_doc)
 
         # Get label dimensions
         label_width_inch = config.get('label_width', 1)

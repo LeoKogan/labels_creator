@@ -309,8 +309,14 @@ function loadLabelTypes() {
 }
 
 function loadLabelTypePreview(labelTypeName) {
+    console.log('Loading label type preview for:', labelTypeName);
     const labelTypeConfig = labelTypesData[labelTypeName];
-    if (!labelTypeConfig) return;
+    if (!labelTypeConfig) {
+        console.error('Label type config not found for:', labelTypeName);
+        return;
+    }
+
+    console.log('Label type config:', labelTypeConfig);
 
     frappe.call({
         method: 'label_creator.api.labels.preview_label',
@@ -318,17 +324,23 @@ function loadLabelTypePreview(labelTypeName) {
             label_type_config_json: JSON.stringify(labelTypeConfig)
         },
         callback: function(response) {
+            console.log('Label type preview response:', response);
+
             if (response.message && response.message.success) {
                 const previewSection = document.getElementById('labelTypePreview');
                 const previewImage = document.getElementById('labelTypePreviewImage');
 
                 if (response.message.image_type === 'png') {
                     previewImage.src = 'data:image/png;base64,' + response.message.image_data;
+                    console.log('Loaded PNG preview');
                 } else if (response.message.pdf_data) {
                     previewImage.src = 'data:application/pdf;base64,' + response.message.pdf_data;
+                    console.log('Loaded PDF preview');
                 }
 
                 previewSection.style.display = 'block';
+            } else {
+                console.error('Label type preview failed:', response.message);
             }
         },
         error: function(error) {
@@ -535,8 +547,11 @@ function displayPreview(content, totalLabels) {
 function loadSingleLabelPreview(index, sku, productName, price) {
     const labelType = document.getElementById('labelType').value;
     if (!labelType) {
+        console.warn('No label type selected');
         return;
     }
+
+    console.log(`Loading preview for index ${index}: ${sku}, ${productName}, $${price}`);
 
     frappe.call({
         method: 'label_creator.api.labels.preview_single_label',
@@ -547,6 +562,8 @@ function loadSingleLabelPreview(index, sku, productName, price) {
             price: price
         },
         callback: function(response) {
+            console.log(`Preview response for index ${index}:`, response);
+
             if (response.message && response.message.success) {
                 const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
                 if (previewCell) {
@@ -565,11 +582,14 @@ function loadSingleLabelPreview(index, sku, productName, price) {
 
                     previewCell.innerHTML = '';
                     previewCell.appendChild(img);
+                    console.log(`Preview loaded successfully for index ${index}`);
                 }
             } else {
+                console.error(`Preview failed for index ${index}:`, response.message);
                 const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
                 if (previewCell) {
                     previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;">Error</div>';
+                    previewCell.title = response.message?.message || 'Unknown error';
                 }
             }
         },
@@ -578,6 +598,7 @@ function loadSingleLabelPreview(index, sku, productName, price) {
             const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
             if (previewCell) {
                 previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;">Error</div>';
+                previewCell.title = error.message || 'Network error';
             }
         }
     });
