@@ -1,1 +1,2 @@
 label_creator.patches.create_default_label_types
+label_creator.patches.update_label_types_with_sample_fields
