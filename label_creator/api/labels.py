@@ -374,14 +374,16 @@ def preview_single_label(label_type, sku, product_name, price):
 
 
 @frappe.whitelist(allow_guest=False)
-def preview_label(label_type_config_json):
+def preview_label(label_type_name=None, label_type_config_json=None):
     """
-    Generate a preview image of label page based on configuration
+    Generate a preview image of label page based on Label Type
+    Can accept either label_type_name OR label_type_config_json for backwards compatibility
+    Uses the same draw_label function as actual label generation
     """
     try:
         import io
         import base64
-        from label_creator.utils.label_generator import draw_label, get_or_create_qr
+        from label_creator.utils.label_generator import draw_label, get_or_create_qr, build_config_from_label_type
         from reportlab.lib.units import inch
 
         # Try to import PyMuPDF for PDF to image conversion
@@ -390,17 +392,34 @@ def preview_label(label_type_config_json):
             has_pymupdf = True
         except ImportError:
             has_pymupdf = False
-            frappe.log_error("PyMuPDF not available, falling back to PDF", "Label Preview Warning")
 
-        # Parse the configuration
-        config = json.loads(label_type_config_json)
-
-        # Sample data for preview - use sample fields from config if available
-        sample_data = {
-            'sku': config.get('sku_sample', 'SAM-PLE-SKU'),
-            'product': config.get('product_name_sample', 'Sample Product Name'),
-            'display_price': str(config.get('price_sample', 29.99))
-        }
+        # Get configuration using shared builder if label_type_name provided
+        if label_type_name:
+            label_type_doc = frappe.get_doc("Label Type", label_type_name)
+            config = build_config_from_label_type(label_type_doc)
+            # Add page layout fields
+            config['labels_per_row'] = label_type_doc.labels_per_row
+            config['labels_per_column'] = label_type_doc.labels_per_column
+            config['page_width_inch'] = label_type_doc.page_width_inch
+            config['page_height_inch'] = label_type_doc.page_height_inch
+            config['margin_top'] = label_type_doc.margin_top or 0
+            config['margin_bottom'] = label_type_doc.margin_bottom or 0
+            config['margin_left'] = label_type_doc.margin_left or 0
+            config['margin_right'] = label_type_doc.margin_right or 0
+            # Get sample data
+            sample_data = {
+                'sku': label_type_doc.get('sku_sample') or 'SAM-PLE-SKU',
+                'product': label_type_doc.get('product_name_sample') or 'Sample Product Name',
+                'display_price': str(label_type_doc.get('price_sample') or 29.99)
+            }
+        else:
+            # Backwards compatibility: parse JSON config
+            config = json.loads(label_type_config_json)
+            sample_data = {
+                'sku': config.get('sku_sample', 'SAM-PLE-SKU'),
+                'product': config.get('product_name_sample', 'Sample Product Name'),
+                'display_price': str(config.get('price_sample', 29.99))
+            }
 
         # Get page and label dimensions
         page_width_inch = config.get('page_width_inch', 8.5)
