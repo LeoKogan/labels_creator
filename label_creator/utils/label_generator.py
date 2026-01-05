@@ -1,6 +1,8 @@
 import os
 import json
 import qrcode
+import barcode
+from barcode.writer import ImageWriter
 import frappe
 from datetime import datetime
 from reportlab.pdfgen import canvas
@@ -170,9 +172,6 @@ def get_or_create_barcode(sku, barcode_dir, barcode_type="QR Code"):
     Retrieve (or generate) the barcode/QR code image for a given SKU.
     Supports: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A
     """
-    import barcode
-    from barcode.writer import ImageWriter
-
     # Sanitize SKU for filename
     safe_sku = "".join(c if c.isalnum() or c in "-_" else "_" for c in sku)
     barcode_filename = f"{safe_sku}_{barcode_type.replace(' ', '_').replace('-', '_')}.png"
