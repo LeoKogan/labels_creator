@@ -265,7 +265,7 @@ def preview_single_label(label_type, sku, product_name, price):
     try:
         import io
         import base64
-        from label_creator.utils.label_generator import draw_label, get_or_create_qr, build_config_from_label_type
+        from label_creator.utils.label_generator import draw_label, build_config_from_label_type
         from reportlab.lib.units import inch
 
         # Try to import PyMuPDF for PDF to image conversion
@@ -367,10 +367,12 @@ def preview_single_label(label_type, sku, product_name, price):
             }
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Single Label Preview Error")
+        error_traceback = frappe.get_traceback()
+        frappe.log_error(error_traceback, "Single Label Preview Error")
         return {
             "success": False,
-            "message": str(e)
+            "message": f"Error: {str(e)}",
+            "traceback": error_traceback if frappe.conf.developer_mode else None
         }
 
 
@@ -384,7 +386,7 @@ def preview_label(label_type_name=None, label_type_config_json=None):
     try:
         import io
         import base64
-        from label_creator.utils.label_generator import draw_label, get_or_create_qr, build_config_from_label_type
+        from label_creator.utils.label_generator import draw_label, build_config_from_label_type
         from reportlab.lib.units import inch
 
         # Try to import PyMuPDF for PDF to image conversion
