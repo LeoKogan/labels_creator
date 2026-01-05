@@ -207,6 +207,7 @@ def get_label_types():
                 "margin_bottom": lt.margin_bottom or 0,
                 "margin_left": lt.margin_left or 0,
                 "margin_right": lt.margin_right or 0,
+                "barcode_type": lt.get("barcode_type") or "QR Code",
                 "qrcode_x_offset": lt.qrcode_x_offset or 0,
                 "qrcode_y_offset": lt.qrcode_y_offset or 0,
                 "qrcode_x_offset_pct": lt.get("qrcode_x_offset_pct") or 0,
