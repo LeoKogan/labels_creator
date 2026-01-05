@@ -1,6 +1,6 @@
 {% extends "templates/web.html" %}
 
-<!-- Label Creator v2.5.2 - Updated: 2026-01-05 02:15 UTC - Cache Buster: 20260105021500 -->
+<!-- Label Creator v2.5.3 - Updated: 2026-01-05 02:30 UTC - Cache Buster: 20260105023000 -->
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -151,7 +151,7 @@
     <footer class="mt-5 pt-4 border-top">
         <div class="row">
             <div class="col-md-12 text-center text-muted">
-                <small>Label Creator v2.5.2 | Last Updated: 2026-01-05 02:15 UTC | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
+                <small>Label Creator v2.5.3 | Last Updated: 2026-01-05 02:30 UTC | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
             </div>
         </div>
     </footer>
@@ -435,10 +435,30 @@ uploadBtn.addEventListener('click', function() {
                         document.getElementById('loadingSpinner').style.display = 'none';
 
                         if (response.message && response.message.success) {
+                            // Validate that processed_content is an array
+                            if (!Array.isArray(response.message.processed_content)) {
+                                console.error('Invalid processed_content - not an array:', response.message.processed_content);
+                                showError('Server returned invalid data. Please check the Error Log for details.');
+                                return;
+                            }
+
+                            // Validate that each item has required fields
+                            const invalidItems = response.message.processed_content.filter(item =>
+                                !item || typeof item !== 'object' || !item.sku || !item.product
+                            );
+
+                            if (invalidItems.length > 0) {
+                                console.error('Invalid items in processed_content:', invalidItems);
+                                showError('Server returned invalid product data. Please check the Error Log for details.');
+                                return;
+                            }
+
                             processedContent = response.message.processed_content;
                             displayPreview(processedContent, response.message.total_labels);
                         } else {
-                            showError(response.message?.message || 'Unknown error processing files');
+                            const errorMsg = response.message?.message || response.message || 'Unknown error processing files';
+                            console.error('Upload processing failed:', errorMsg);
+                            showError(errorMsg);
                         }
                     },
                     error: function(error) {
