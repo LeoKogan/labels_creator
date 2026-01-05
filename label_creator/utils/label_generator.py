@@ -4,6 +4,7 @@ import qrcode
 import frappe
 from datetime import datetime
 from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph
 
@@ -59,6 +60,7 @@ def build_config_from_label_type(label_type_doc):
         "label_height": label_type_doc.label_height,
         "label_orientation": label_type_doc.label_orientation or "portrait",
         "offset_input_mode": label_type_doc.get("offset_input_mode") or "Percentage",
+        "barcode_type": label_type_doc.get("barcode_type") or "QR Code",
         "qrcode_x_offset": label_type_doc.qrcode_x_offset or 0,
         "qrcode_y_offset": label_type_doc.qrcode_y_offset or 0,
         "qrcode_x_offset_pct": label_type_doc.get("qrcode_x_offset_pct") or 0,
@@ -123,6 +125,7 @@ def get_label_dimensions():
                 "margin_left": lt.margin_left or 0,
                 "margin_right": lt.margin_right or 0,
                 "offset_input_mode": lt.get("offset_input_mode") or "Percentage",
+                "barcode_type": lt.get("barcode_type") or "QR Code",
                 "show_qr_code": lt.get("show_qr_code", 1),
                 "qrcode_x_offset": lt.qrcode_x_offset or 0,
                 "qrcode_y_offset": lt.qrcode_y_offset or 0,
@@ -162,18 +165,84 @@ def get_label_dimensions():
         raise
 
 
-def get_or_create_qr(sku, qr_dir):
+def get_or_create_barcode(sku, barcode_dir, barcode_type="QR Code"):
     """
-    Retrieve (or generate) the QR code image for a given SKU.
+    Retrieve (or generate) the barcode/QR code image for a given SKU.
+    Supports: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A
     """
-    qr_path = os.path.join(qr_dir, f"{sku}.png")
-    if not os.path.exists(qr_path):
+    import barcode
+    from barcode.writer import ImageWriter
+
+    # Sanitize SKU for filename
+    safe_sku = "".join(c if c.isalnum() or c in "-_" else "_" for c in sku)
+    barcode_filename = f"{safe_sku}_{barcode_type.replace(' ', '_').replace('-', '_')}.png"
+    barcode_path = os.path.join(barcode_dir, barcode_filename)
+
+    if os.path.exists(barcode_path):
+        return barcode_path
+
+    try:
+        if barcode_type == "QR Code":
+            # Generate QR Code
+            qr = qrcode.QRCode(box_size=10, border=1)
+            qr.add_data(sku)
+            qr.make(fit=True)
+            qr_img = qr.make_image(fill_color="black", back_color="white")
+            qr_img.save(barcode_path)
+        elif barcode_type == "Code 39":
+            # Generate Code 39 barcode
+            code39 = barcode.get_barcode_class('code39')
+            barcode_img = code39(sku, writer=ImageWriter())
+            barcode_img.save(barcode_path.replace('.png', ''))  # Library adds .png automatically
+        elif barcode_type == "Code 128":
+            # Generate Code 128 barcode
+            code128 = barcode.get_barcode_class('code128')
+            barcode_img = code128(sku, writer=ImageWriter())
+            barcode_img.save(barcode_path.replace('.png', ''))
+        elif barcode_type == "EAN-13":
+            # EAN-13 requires exactly 12 digits (13th is checksum)
+            # Pad or truncate SKU to 12 digits
+            ean_sku = ''.join(filter(str.isdigit, sku))[:12].zfill(12)
+            ean13 = barcode.get_barcode_class('ean13')
+            barcode_img = ean13(ean_sku, writer=ImageWriter())
+            barcode_img.save(barcode_path.replace('.png', ''))
+        elif barcode_type == "EAN-8":
+            # EAN-8 requires exactly 7 digits (8th is checksum)
+            ean_sku = ''.join(filter(str.isdigit, sku))[:7].zfill(7)
+            ean8 = barcode.get_barcode_class('ean8')
+            barcode_img = ean8(ean_sku, writer=ImageWriter())
+            barcode_img.save(barcode_path.replace('.png', ''))
+        elif barcode_type == "UPC-A":
+            # UPC-A requires exactly 11 digits (12th is checksum)
+            upc_sku = ''.join(filter(str.isdigit, sku))[:11].zfill(11)
+            upca = barcode.get_barcode_class('upca')
+            barcode_img = upca(upc_sku, writer=ImageWriter())
+            barcode_img.save(barcode_path.replace('.png', ''))
+        else:
+            # Fallback to QR Code
+            qr = qrcode.QRCode(box_size=10, border=1)
+            qr.add_data(sku)
+            qr.make(fit=True)
+            qr_img = qr.make_image(fill_color="black", back_color="white")
+            qr_img.save(barcode_path)
+    except Exception as e:
+        # On error, fallback to QR Code
+        frappe.log_error(f"Error generating {barcode_type} for {sku}: {str(e)}", "Barcode Generation Error")
         qr = qrcode.QRCode(box_size=10, border=1)
         qr.add_data(sku)
         qr.make(fit=True)
         qr_img = qr.make_image(fill_color="black", back_color="white")
-        qr_img.save(qr_path)
-    return qr_path
+        qr_img.save(barcode_path)
+
+    return barcode_path
+
+
+# Keep old function for backwards compatibility
+def get_or_create_qr(sku, qr_dir):
+    """
+    Backwards compatibility wrapper for get_or_create_barcode
+    """
+    return get_or_create_barcode(sku, qr_dir, "QR Code")
 
 
 def wrap_text(c, text, font_name, font_size, max_width_pts, max_word_length=None):
@@ -360,8 +429,9 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
     currency_code = config.get("currency", "CAD")
     currency_info = get_currency_info(currency_code)
 
-    # Retrieve (or generate) the QR code image
-    qr_path = get_or_create_qr(sku, qr_dir)
+    # Retrieve (or generate) the barcode/QR code image
+    barcode_type = config.get("barcode_type", "QR Code")
+    qr_path = get_or_create_barcode(sku, qr_dir, barcode_type)
 
     if orientation == "landscape":
         # Landscape Layout

@@ -29,6 +29,7 @@
   "margin_right",
   "qr_code_tab",
   "show_qr_code",
+  "barcode_type",
   "qrcode_x_offset",
   "qrcode_x_offset_pct",
   "qrcode_y_offset",
@@ -202,25 +203,34 @@
   {
    "fieldname": "qr_code_tab",
    "fieldtype": "Tab Break",
-   "label": "QR Code"
+   "label": "Barcode"
   },
   {
    "fieldname": "show_qr_code",
    "fieldtype": "Check",
-   "label": "Show QR Code",
+   "label": "Show Barcode",
    "default": "1"
+  },
+  {
+   "fieldname": "barcode_type",
+   "fieldtype": "Select",
+   "label": "Barcode Type",
+   "options": "QR Code\nCode 39\nCode 128\nEAN-13\nEAN-8\nUPC-A",
+   "default": "QR Code",
+   "description": "Select the barcode/QR code standard to use",
+   "depends_on": "eval:doc.show_qr_code"
   },
   {
    "fieldname": "qrcode_x_offset",
    "fieldtype": "Float",
-   "label": "QR Code X Offset (inches)",
+   "label": "Barcode X Offset (inches)",
    "default": "0.05",
    "depends_on": "eval:doc.show_qr_code"
   },
   {
    "fieldname": "qrcode_x_offset_pct",
    "fieldtype": "Float",
-   "label": "QR Code X Offset (%)",
+   "label": "Barcode X Offset (%)",
    "default": "10",
    "read_only": 1,
    "depends_on": "eval:doc.show_qr_code"
@@ -228,14 +238,14 @@
   {
    "fieldname": "qrcode_y_offset",
    "fieldtype": "Float",
-   "label": "QR Code Y Offset (inches)",
+   "label": "Barcode Y Offset (inches)",
    "default": "0.05",
    "depends_on": "eval:doc.show_qr_code"
   },
   {
    "fieldname": "qrcode_y_offset_pct",
    "fieldtype": "Float",
-   "label": "QR Code Y Offset (%)",
+   "label": "Barcode Y Offset (%)",
    "default": "5",
    "read_only": 1,
    "depends_on": "eval:doc.show_qr_code"
@@ -243,14 +253,14 @@
   {
    "fieldname": "qrcode_size_inch",
    "fieldtype": "Float",
-   "label": "QR Code Size (inches)",
+   "label": "Barcode Size (inches)",
    "description": "Leave blank for auto-calculation based on label size",
    "depends_on": "eval:doc.show_qr_code && doc.offset_input_mode=='Inches'"
   },
   {
    "fieldname": "qrcode_size_pct",
    "fieldtype": "Float",
-   "label": "QR Code Size (% of label width)",
+   "label": "Barcode Size (% of label width)",
    "description": "Leave blank for auto-calculation (typically 30-50% of label width)",
    "depends_on": "eval:doc.show_qr_code && doc.offset_input_mode=='Percentage'",
    "default": "40"
