@@ -3,7 +3,9 @@
 ## Problem
 You're not seeing the updated Label Creator page with:
 - ❌ Preview column in the table
-- ❌ Version footer showing "v2.5.0"
+- ❌ Version footer showing "v2.5.1"
+- ❌ Getting "Preview failed" errors
+- ❌ Different versions at /label-creator vs /app/label-creator
 
 This is a **caching issue** - Frappe is serving an old cached version of the page.
 
@@ -85,7 +87,7 @@ After clearing caches and refreshing, you should see:
 
 ✅ **At the bottom of the page:**
 ```
-Label Creator v2.5.0 | Last Updated: 2026-01-05 | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A
+Label Creator v2.5.1 | Last Updated: 2026-01-05 02:00 UTC | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A
 ```
 
 ✅ **In the table header:**
@@ -94,6 +96,46 @@ Label Creator v2.5.0 | Last Updated: 2026-01-05 | Barcode Support: QR Code, Code
 ```
 
 ✅ **Preview images loading** in the Preview column for each product row
+
+✅ **Same page at both URLs:**
+- `/label-creator` (web route)
+- `/app/label-creator` (desk route)
+
+✅ **In browser console (F12):**
+- No errors about "barcode" module
+- Preview loading messages
+- Full error details if any previews fail
+
+---
+
+## Still Getting "Preview Failed" Errors?
+
+If previews are still failing, check the browser console for detailed error messages:
+
+### How to Check Browser Console:
+1. Press **F12** to open Developer Tools
+2. Click the **Console** tab
+3. Reload the page and upload a file
+4. Look for error messages in **RED**
+
+The console will now show:
+- Full error messages from the server
+- Python traceback if in developer mode
+- Exact line where the error occurred
+
+**Common Errors:**
+
+❌ **"No module named 'barcode'"**
+- Solution: Run `bench pip install python-barcode` on your server
+- Then restart: `bench restart`
+
+❌ **"Label Type not found"**
+- Solution: Run `bench migrate` to create Label Type records
+- Or create a Label Type manually in ERPNext
+
+❌ **"Permission denied"**
+- Solution: Make sure you're logged in to ERPNext
+- Check that your user has access to Label Creator
 
 ---
 
@@ -145,15 +187,18 @@ bench restart
 
 ## Quick Checklist
 
-- [ ] Pulled latest code from git
+- [ ] Pulled latest code from git (`git pull origin claude/fix-sku-hyphen-breaking-AOb9W`)
 - [ ] Installed python-barcode (`bench pip install python-barcode`)
+- [ ] Ran migrations (`bench migrate`)
+- [ ] Imported workspace fixture (`bench import-module label_creator --import-data workspace`)
 - [ ] Cleared Frappe cache (`bench clear-cache`)
 - [ ] Cleared website cache (`bench clear-website-cache`)
 - [ ] Built assets (`bench build`)
 - [ ] Restarted bench (`bench restart`)
 - [ ] Cleared browser cache (Ctrl+Shift+R or Cmd+Shift+R)
-- [ ] Verified footer shows "v2.5.0"
+- [ ] Verified footer shows "v2.5.1"
 - [ ] Verified Preview column appears in table
+- [ ] Checked browser console (F12) for errors
 
 ---
 
