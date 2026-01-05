@@ -1,6 +1,6 @@
 {% extends "templates/web.html" %}
 
-<!-- Label Creator v2.5.1 - Updated: 2026-01-05 02:00 UTC - Cache Buster: 20260105020000 -->
+<!-- Label Creator v2.5.2 - Updated: 2026-01-05 02:15 UTC - Cache Buster: 20260105021500 -->
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -151,7 +151,7 @@
     <footer class="mt-5 pt-4 border-top">
         <div class="row">
             <div class="col-md-12 text-center text-muted">
-                <small>Label Creator v2.5.1 | Last Updated: 2026-01-05 02:00 UTC | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
+                <small>Label Creator v2.5.2 | Last Updated: 2026-01-05 02:15 UTC | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
             </div>
         </div>
     </footer>
@@ -329,13 +329,11 @@ function loadLabelTypes() {
 
 function loadLabelTypePreview(labelTypeName) {
     console.log('Loading label type preview for:', labelTypeName);
-    const labelTypeConfig = labelTypesData[labelTypeName];
-    if (!labelTypeConfig) {
-        console.error('Label type config not found for:', labelTypeName);
+
+    if (!labelTypeName) {
+        console.error('No label type name provided');
         return;
     }
-
-    console.log('Label type config:', labelTypeConfig);
 
     const previewSection = document.getElementById('labelTypePreview');
     const previewImage = document.getElementById('labelTypePreviewImage');
@@ -348,7 +346,7 @@ function loadLabelTypePreview(labelTypeName) {
     frappe.call({
         method: 'label_creator.api.labels.preview_label',
         args: {
-            label_type_config_json: JSON.stringify(labelTypeConfig)
+            label_type_name: labelTypeName
         },
         callback: function(response) {
             console.log('Label type preview response:', response);
@@ -366,7 +364,13 @@ function loadLabelTypePreview(labelTypeName) {
                 previewImage.alt = 'Label Preview';
             } else {
                 console.error('Label type preview failed:', response.message);
+                const errorMsg = response.message?.message || response.message || 'Unknown error';
+                console.error('Error details:', errorMsg);
+                if (response.message?.traceback) {
+                    console.error('Traceback:', response.message.traceback);
+                }
                 previewImage.alt = 'Preview failed';
+                previewImage.title = errorMsg;
             }
         },
         error: function(error) {
@@ -639,11 +643,30 @@ function loadSingleLabelPreview(index, sku, productName, price) {
 
 function refreshRowPreviews() {
     const labelType = document.getElementById('labelType').value;
-    if (!labelType || processedContent.length === 0) {
+    if (!labelType) {
+        console.log('No label type selected, skipping row previews');
         return;
     }
 
+    if (!Array.isArray(processedContent) || processedContent.length === 0) {
+        console.log('No processed content available, skipping row previews');
+        return;
+    }
+
+    console.log(`Refreshing ${processedContent.length} row previews with label type: ${labelType}`);
+
     processedContent.forEach((item, index) => {
+        // Validate that item has required properties
+        if (!item || typeof item !== 'object') {
+            console.error(`Invalid item at index ${index}:`, item);
+            return;
+        }
+
+        if (!item.sku || !item.product) {
+            console.error(`Missing sku or product at index ${index}:`, item);
+            return;
+        }
+
         const priceInput = document.querySelector(`.price-input[data-index="${index}"]`);
         const price = priceInput ? priceInput.value : item.display_price;
         loadSingleLabelPreview(index, item.sku, item.product, price);
