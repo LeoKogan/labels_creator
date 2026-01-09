@@ -1,5 +1,7 @@
 {% extends "templates/web.html" %}
 
+<!-- Label Creator v2.5.4 - Updated: 2026-01-05 02:45 UTC - Cache Buster: 20260105024500 -->
+
 {% block title %}{{ title }}{% endblock %}
 
 {% block page_content %}
@@ -47,20 +49,31 @@
                     <h5 class="card-title">Label Preview</h5>
                     <p>Total Labels: <strong id="totalLabels">0</strong></p>
 
-                    <div class="row mb-3 align-items-end">
+                    <div class="row mb-3 align-items-start">
                         <div class="col-md-4">
                             <label for="labelType" class="form-label">Label Type</label>
                             <select id="labelType" class="form-select">
                                 <option value="">Loading...</option>
                             </select>
                         </div>
-                        <div class="col-md-8">
-                            <button id="generateBtn" class="btn btn-success me-2">
-                                Generate Labels (PDF)
-                            </button>
-                            <button id="startOverBtn" class="btn btn-secondary">
-                                Start Over
-                            </button>
+                        <div class="col-md-4">
+                            <!-- Label Type Preview - shown next to selector -->
+                            <div id="labelTypePreview" style="display: none;">
+                                <label class="form-label">Sample Label Preview</label>
+                                <div class="text-center" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px; background-color: #f8f9fa;">
+                                    <img id="labelTypePreviewImage" src="" alt="Label Preview" style="max-width: 100%; max-height: 200px; object-fit: contain;">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div>
+                                <button id="generateBtn" class="btn btn-success me-2">
+                                    Generate Labels (PDF)
+                                </button>
+                                <button id="startOverBtn" class="btn btn-secondary">
+                                    Start Over
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -71,6 +84,7 @@
                                     <th style="width: 50px;">
                                         <input type="checkbox" id="selectAll" checked>
                                     </th>
+                                    <th style="width: 100px;">Preview</th>
                                     <th>SKU</th>
                                     <th>Product</th>
                                     <th style="width: 150px;">Price</th>
@@ -132,6 +146,15 @@
             </div>
         </div>
     </div>
+
+    <!-- Version Footer -->
+    <footer class="mt-5 pt-4 border-top">
+        <div class="row">
+            <div class="col-md-12 text-center text-muted">
+                <small>Label Creator v2.5.4 | Last Updated: 2026-01-05 02:45 UTC | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
+            </div>
+        </div>
+    </footer>
 </div>
 
 {% block style %}
@@ -175,12 +198,38 @@
 }
 
 /* SKU column word wrapping - break on hyphens and word boundaries */
-#previewTable tbody td:nth-child(2) {
+#previewTable tbody td:nth-child(3) {
     overflow-wrap: anywhere;
     word-break: normal;
     white-space: normal;
     max-width: 200px;
     min-width: 80px;
+}
+
+/* Label preview cell styling */
+.label-preview-cell {
+    text-align: center;
+    vertical-align: middle;
+    padding: 8px !important;
+}
+
+.label-preview-cell img {
+    display: inline-block;
+    object-fit: contain;
+}
+
+/* Label type preview styling - shown next to selector */
+#labelTypePreview {
+    min-height: 150px;
+}
+
+#labelTypePreview img {
+    max-height: 200px;
+    transition: opacity 0.3s ease-in-out;
+}
+
+#labelTypePreview img.loading {
+    opacity: 0.5;
 }
 </style>
 {% endblock %}
@@ -229,17 +278,19 @@ document.addEventListener('DOMContentLoaded', function() {
     loadLabelTypes();
 });
 
+let labelTypesData = {};
+
 function loadLabelTypes() {
     frappe.call({
         method: 'label_creator.api.labels.get_label_types',
         args: {},
         callback: function(response) {
             if (response.message && response.message.success) {
-                const labelTypes = response.message.label_types;
+                labelTypesData = response.message.label_types;
                 const select = document.getElementById('labelType');
                 select.innerHTML = '';
 
-                for (const [key, value] of Object.entries(labelTypes)) {
+                for (const [key, value] of Object.entries(labelTypesData)) {
                     const option = document.createElement('option');
                     option.value = key;
                     // Use the 'name' field if available, otherwise show key with dimensions
@@ -247,11 +298,85 @@ function loadLabelTypes() {
                     option.textContent = displayName;
                     select.appendChild(option);
                 }
+
+                // Add event listener to show preview when label type changes
+                select.addEventListener('change', function() {
+                    if (this.value) {
+                        loadLabelTypePreview(this.value);
+                        // Refresh row previews if data is loaded
+                        if (processedContent.length > 0) {
+                            refreshRowPreviews();
+                        }
+                    } else {
+                        document.getElementById('labelTypePreview').style.display = 'none';
+                    }
+                });
+
+                // Load preview for first option if available
+                if (Object.keys(labelTypesData).length > 0) {
+                    const firstKey = Object.keys(labelTypesData)[0];
+                    select.value = firstKey;
+                    loadLabelTypePreview(firstKey);
+                }
             }
         },
         error: function(error) {
             console.error('Error loading label types:', error);
             alert('Error loading label types');
+        }
+    });
+}
+
+function loadLabelTypePreview(labelTypeName) {
+    console.log('Loading label type preview for:', labelTypeName);
+
+    if (!labelTypeName) {
+        console.error('No label type name provided');
+        return;
+    }
+
+    const previewSection = document.getElementById('labelTypePreview');
+    const previewImage = document.getElementById('labelTypePreviewImage');
+
+    // Show preview section with loading state
+    previewSection.style.display = 'block';
+    previewImage.classList.add('loading');
+    previewImage.alt = 'Loading preview...';
+
+    frappe.call({
+        method: 'label_creator.api.labels.preview_label',
+        args: {
+            label_type_name: labelTypeName
+        },
+        callback: function(response) {
+            console.log('Label type preview response:', response);
+
+            previewImage.classList.remove('loading');
+
+            if (response.message && response.message.success) {
+                if (response.message.image_type === 'png') {
+                    previewImage.src = 'data:image/png;base64,' + response.message.image_data;
+                    console.log('Loaded PNG preview');
+                } else if (response.message.pdf_data) {
+                    previewImage.src = 'data:application/pdf;base64,' + response.message.pdf_data;
+                    console.log('Loaded PDF preview');
+                }
+                previewImage.alt = 'Label Preview';
+            } else {
+                console.error('Label type preview failed:', response.message);
+                const errorMsg = response.message?.message || response.message || 'Unknown error';
+                console.error('Error details:', errorMsg);
+                if (response.message?.traceback) {
+                    console.error('Traceback:', response.message.traceback);
+                }
+                previewImage.alt = 'Preview failed';
+                previewImage.title = errorMsg;
+            }
+        },
+        error: function(error) {
+            console.error('Error loading label type preview:', error);
+            previewImage.classList.remove('loading');
+            previewImage.alt = 'Error loading preview';
         }
     });
 }
@@ -310,10 +435,30 @@ uploadBtn.addEventListener('click', function() {
                         document.getElementById('loadingSpinner').style.display = 'none';
 
                         if (response.message && response.message.success) {
+                            // Validate that processed_content is an array
+                            if (!Array.isArray(response.message.processed_content)) {
+                                console.error('Invalid processed_content - not an array:', response.message.processed_content);
+                                showError('Server returned invalid data. Please check the Error Log for details.');
+                                return;
+                            }
+
+                            // Validate that each item has required fields
+                            const invalidItems = response.message.processed_content.filter(item =>
+                                !item || typeof item !== 'object' || !item.sku || !item.product
+                            );
+
+                            if (invalidItems.length > 0) {
+                                console.error('Invalid items in processed_content:', invalidItems);
+                                showError('Server returned invalid product data. Please check the Error Log for details.');
+                                return;
+                            }
+
                             processedContent = response.message.processed_content;
                             displayPreview(processedContent, response.message.total_labels);
                         } else {
-                            showError(response.message?.message || 'Unknown error processing files');
+                            const errorMsg = response.message?.message || response.message || 'Unknown error processing files';
+                            console.error('Upload processing failed:', errorMsg);
+                            showError(errorMsg);
                         }
                     },
                     error: function(error) {
@@ -354,6 +499,13 @@ function displayPreview(content, totalLabels) {
         checkbox.checked = true;
         cbCell.appendChild(checkbox);
         tr.appendChild(cbCell);
+
+        // Preview cell
+        const previewCell = document.createElement('td');
+        previewCell.className = 'label-preview-cell';
+        previewCell.setAttribute('data-index', index);
+        previewCell.innerHTML = '<div class="text-muted" style="font-size: 12px;">Loading...</div>';
+        tr.appendChild(previewCell);
 
         // SKU cell
         const skuCell = document.createElement('td');
@@ -415,6 +567,18 @@ function displayPreview(content, totalLabels) {
         input.addEventListener('input', updateTotalLabels);
     });
 
+    // Add event listeners to price inputs to refresh preview when price changes
+    document.querySelectorAll('.price-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const index = this.getAttribute('data-index');
+            const item = processedContent[index];
+            if (item) {
+                const productNameElement = document.querySelectorAll('td')[index * 6 + 3]; // Adjust based on column count
+                loadSingleLabelPreview(index, item.sku, item.product, this.value);
+            }
+        });
+    });
+
     // Select/deselect all checkbox
     const selectAllCheckbox = document.getElementById('selectAll');
     selectAllCheckbox.checked = true;
@@ -427,6 +591,106 @@ function displayPreview(content, totalLabels) {
 
     document.getElementById('previewSection').style.display = 'block';
     window.scrollTo(0, document.body.scrollHeight);
+
+    // Load individual label previews for each row
+    refreshRowPreviews();
+}
+
+function loadSingleLabelPreview(index, sku, productName, price) {
+    const labelType = document.getElementById('labelType').value;
+    if (!labelType) {
+        console.warn('No label type selected');
+        return;
+    }
+
+    console.log(`Loading preview for index ${index}: ${sku}, ${productName}, $${price}`);
+
+    frappe.call({
+        method: 'label_creator.api.labels.preview_single_label',
+        args: {
+            label_type: labelType,
+            sku: sku,
+            product_name: productName,
+            price: price
+        },
+        callback: function(response) {
+            console.log(`Preview response for index ${index}:`, response);
+
+            if (response.message && response.message.success) {
+                const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
+                if (previewCell) {
+                    const img = document.createElement('img');
+                    img.style.maxWidth = '80px';
+                    img.style.maxHeight = '80px';
+                    img.style.border = '1px solid #ddd';
+                    img.style.borderRadius = '4px';
+                    img.alt = 'Label Preview';
+
+                    if (response.message.image_type === 'png') {
+                        img.src = 'data:image/png;base64,' + response.message.image_data;
+                    } else if (response.message.pdf_data) {
+                        img.src = 'data:application/pdf;base64,' + response.message.pdf_data;
+                    }
+
+                    previewCell.innerHTML = '';
+                    previewCell.appendChild(img);
+                    console.log(`Preview loaded successfully for index ${index}`);
+                }
+            } else {
+                console.error(`Preview failed for index ${index}:`, response.message);
+                if (response.message?.traceback) {
+                    console.error('Traceback:', response.message.traceback);
+                }
+                const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
+                if (previewCell) {
+                    previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;">Error</div>';
+                    const errorMsg = response.message?.message || response.message || 'Unknown error';
+                    previewCell.title = errorMsg;
+                    console.error(`Full error for row ${index}:`, errorMsg);
+                }
+            }
+        },
+        error: function(error) {
+            console.error('Error loading single label preview:', error);
+            const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
+            if (previewCell) {
+                previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;">Error</div>';
+                previewCell.title = error.message || 'Network error';
+            }
+        }
+    });
+}
+
+function refreshRowPreviews() {
+    const labelType = document.getElementById('labelType').value;
+    if (!labelType) {
+        console.log('No label type selected, skipping row previews');
+        return;
+    }
+
+    if (!Array.isArray(processedContent) || processedContent.length === 0) {
+        console.log('No processed content available, skipping row previews');
+        return;
+    }
+
+    console.log(`Refreshing ${processedContent.length} row previews with label type: ${labelType}`);
+
+    processedContent.forEach((item, index) => {
+        // Validate that item has required properties
+        if (!item || typeof item !== 'object') {
+            console.error(`Invalid item at index ${index}:`, item);
+            return;
+        }
+
+        if (!item.sku || !item.product) {
+            console.error(`Missing sku or product at index ${index}:`, item);
+            return;
+        }
+
+        const priceInput = document.querySelector(`.price-input[data-index="${index}"]`);
+        const price = priceInput ? priceInput.value : item.display_price;
+        loadSingleLabelPreview(index, item.sku, item.product, price);
+    });
 }
 
 function updateTotalLabels() {

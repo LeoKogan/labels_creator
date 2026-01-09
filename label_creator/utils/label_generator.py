@@ -4,8 +4,112 @@ import qrcode
 import frappe
 from datetime import datetime
 from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph
+
+# Lazy import for barcode module - only imported when needed
+# This prevents the entire module from failing if barcode is not installed
+try:
+    import barcode
+    from barcode.writer import ImageWriter
+    HAS_BARCODE = True
+except ImportError:
+    HAS_BARCODE = False
+    frappe.log_error(
+        "python-barcode module is not installed. Only QR codes will be available.\n\n"
+        "To install: bench pip install python-barcode",
+        "Barcode Module Not Found"
+    )
+
+
+def get_currency_info(currency_code):
+    """
+    Get currency information from ERPNext Currency doctype
+    Returns dict with symbol, symbol_on_right, and number_format
+    """
+    try:
+        if currency_code and frappe.db.exists("Currency", currency_code):
+            currency = frappe.get_doc("Currency", currency_code)
+            return {
+                'symbol': currency.symbol or '$',
+                'symbol_on_right': currency.symbol_on_right or 0,
+                'number_format': currency.number_format or '#,##0.00'
+            }
+    except Exception as e:
+        frappe.log_error(f"Error fetching currency {currency_code}: {str(e)}", "Currency Fetch Error")
+
+    # Default to USD format
+    return {
+        'symbol': '$',
+        'symbol_on_right': 0,
+        'number_format': '#,##0.00'
+    }
+
+
+def format_price(price, currency_info):
+    """
+    Format price with currency symbol based on currency settings
+    """
+    symbol = currency_info.get('symbol', '$')
+    symbol_on_right = currency_info.get('symbol_on_right', 0)
+
+    # Format the price as a float with 2 decimal places
+    formatted_price = f"{float(price):.2f}"
+
+    # Place symbol based on symbol_on_right setting
+    if symbol_on_right:
+        return f"{formatted_price}{symbol}"
+    else:
+        return f"{symbol}{formatted_price}"
+
+
+def build_config_from_label_type(label_type_doc):
+    """
+    Build a complete configuration dictionary from a Label Type document
+    This ensures consistency between preview and label generation
+    """
+    return {
+        "label_width": label_type_doc.label_width,
+        "label_height": label_type_doc.label_height,
+        "label_orientation": label_type_doc.label_orientation or "portrait",
+        "offset_input_mode": label_type_doc.get("offset_input_mode") or "Percentage",
+        "barcode_type": label_type_doc.get("barcode_type") or "QR Code",
+        "qrcode_x_offset": label_type_doc.qrcode_x_offset or 0,
+        "qrcode_y_offset": label_type_doc.qrcode_y_offset or 0,
+        "qrcode_x_offset_pct": label_type_doc.get("qrcode_x_offset_pct") or 0,
+        "qrcode_y_offset_pct": label_type_doc.get("qrcode_y_offset_pct") or 0,
+        "qrcode_size_inch": label_type_doc.get("qrcode_size_inch") or None,
+        "qrcode_size_pct": label_type_doc.get("qrcode_size_pct") or None,
+        "sku_x_offset": label_type_doc.sku_x_offset or 0,
+        "sku_y_offset": label_type_doc.sku_y_offset or 0,
+        "sku_x_offset_pct": label_type_doc.get("sku_x_offset_pct") or 0,
+        "sku_y_offset_pct": label_type_doc.get("sku_y_offset_pct") or 0,
+        "sku_font_type": label_type_doc.get("sku_font_type") or "Helvetica",
+        "sku_font_size": label_type_doc.get("sku_font_size") or 7,
+        "sku_max_word_length": label_type_doc.get("sku_max_word_length") or 9,
+        "sku_text_align": label_type_doc.get("sku_text_align") or "Centre",
+        "product_name_x_offset": label_type_doc.get("product_name_x_offset") or 0,
+        "product_name_y_offset": label_type_doc.get("product_name_y_offset") or 0,
+        "product_name_x_offset_pct": label_type_doc.get("product_name_x_offset_pct") or 0,
+        "product_name_y_offset_pct": label_type_doc.get("product_name_y_offset_pct") or 0,
+        "product_name_font_type": label_type_doc.get("product_name_font_type") or "Helvetica",
+        "product_name_font_size": label_type_doc.get("product_name_font_size") or 6,
+        "product_name_max_word_length": label_type_doc.get("product_name_max_word_length") or 9,
+        "product_name_text_align": label_type_doc.get("product_name_text_align") or "Left",
+        "currency": label_type_doc.get("currency") or "CAD",
+        "price_x_offset": label_type_doc.price_x_offset or 0,
+        "price_y_offset": label_type_doc.price_y_offset or 0,
+        "price_x_offset_pct": label_type_doc.get("price_x_offset_pct") or 0,
+        "price_y_offset_pct": label_type_doc.get("price_y_offset_pct") or 0,
+        "price_rotation": label_type_doc.price_rotation or 0,
+        "price_font_type": label_type_doc.get("price_font_type") or "Helvetica-Bold",
+        "price_font_size": label_type_doc.get("price_font_size") or 8,
+        "show_qr_code": label_type_doc.get("show_qr_code", 1),
+        "show_sku": label_type_doc.get("show_sku", 1),
+        "show_product_name": label_type_doc.show_product_name or 0,
+        "show_price": label_type_doc.get("show_price", 1)
+    }
 
 
 def get_label_dimensions():
@@ -34,23 +138,34 @@ def get_label_dimensions():
                 "margin_bottom": lt.margin_bottom or 0,
                 "margin_left": lt.margin_left or 0,
                 "margin_right": lt.margin_right or 0,
+                "offset_input_mode": lt.get("offset_input_mode") or "Percentage",
+                "barcode_type": lt.get("barcode_type") or "QR Code",
                 "show_qr_code": lt.get("show_qr_code", 1),
                 "qrcode_x_offset": lt.qrcode_x_offset or 0,
                 "qrcode_y_offset": lt.qrcode_y_offset or 0,
-                "qrcode_size_pts": lt.qrcode_size_pts or None,
+                "qrcode_x_offset_pct": lt.get("qrcode_x_offset_pct") or 0,
+                "qrcode_y_offset_pct": lt.get("qrcode_y_offset_pct") or 0,
+                "qrcode_size_inch": lt.get("qrcode_size_inch") or None,
+                "qrcode_size_pct": lt.get("qrcode_size_pct") or None,
                 "show_sku": lt.get("show_sku", 1),
+                "sku_sample": lt.get("sku_sample") or "SAM-PLE-SKU",
                 "sku_x_offset": lt.sku_x_offset or 0,
                 "sku_y_offset": lt.sku_y_offset or 0,
                 "sku_font_type": lt.get("sku_font_type") or "Helvetica",
                 "sku_font_size": lt.get("sku_font_size") or 7,
                 "sku_max_word_length": lt.get("sku_max_word_length") or 9,
+                "sku_text_align": lt.get("sku_text_align") or "Centre",
                 "show_product_name": lt.get("show_product_name", 0),
+                "product_name_sample": lt.get("product_name_sample") or "Sample Product Name",
                 "product_name_x_offset": lt.get("product_name_x_offset") or 0,
                 "product_name_y_offset": lt.get("product_name_y_offset") or 0,
                 "product_name_font_type": lt.get("product_name_font_type") or "Helvetica",
                 "product_name_font_size": lt.get("product_name_font_size") or 6,
                 "product_name_max_word_length": lt.get("product_name_max_word_length") or 9,
+                "product_name_text_align": lt.get("product_name_text_align") or "Left",
                 "show_price": lt.get("show_price", 1),
+                "price_sample": lt.get("price_sample") or 29.99,
+                "currency": lt.get("currency") or "CAD",
                 "price_x_offset": lt.price_x_offset or 0,
                 "price_y_offset": lt.price_y_offset or 0,
                 "price_rotation": lt.price_rotation or 0,
@@ -64,26 +179,106 @@ def get_label_dimensions():
         raise
 
 
-def get_or_create_qr(sku, qr_dir):
+def get_or_create_barcode(sku, barcode_dir, barcode_type="QR Code"):
     """
-    Retrieve (or generate) the QR code image for a given SKU.
+    Retrieve (or generate) the barcode/QR code image for a given SKU.
+    Supports: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A
+
+    If python-barcode module is not installed, falls back to QR Code.
     """
-    qr_path = os.path.join(qr_dir, f"{sku}.png")
-    if not os.path.exists(qr_path):
+    # Check if barcode module is available for non-QR code types
+    if not HAS_BARCODE and barcode_type != "QR Code":
+        frappe.msgprint(
+            f"python-barcode module is not installed. Falling back to QR Code instead of {barcode_type}.<br><br>"
+            "To enable other barcode types, run: <code>bench pip install python-barcode</code>",
+            title="Barcode Module Not Available",
+            indicator="orange"
+        )
+        barcode_type = "QR Code"  # Fallback to QR Code
+
+    # Sanitize SKU for filename
+    safe_sku = "".join(c if c.isalnum() or c in "-_" else "_" for c in sku)
+    barcode_filename = f"{safe_sku}_{barcode_type.replace(' ', '_').replace('-', '_')}.png"
+    barcode_path = os.path.join(barcode_dir, barcode_filename)
+
+    if os.path.exists(barcode_path):
+        return barcode_path
+
+    try:
+        if barcode_type == "QR Code":
+            # Generate QR Code
+            qr = qrcode.QRCode(box_size=10, border=1)
+            qr.add_data(sku)
+            qr.make(fit=True)
+            qr_img = qr.make_image(fill_color="black", back_color="white")
+            qr_img.save(barcode_path)
+        elif barcode_type == "Code 39":
+            # Generate Code 39 barcode
+            code39 = barcode.get_barcode_class('code39')
+            barcode_img = code39(sku, writer=ImageWriter())
+            barcode_img.save(barcode_path.replace('.png', ''))  # Library adds .png automatically
+        elif barcode_type == "Code 128":
+            # Generate Code 128 barcode
+            code128 = barcode.get_barcode_class('code128')
+            barcode_img = code128(sku, writer=ImageWriter())
+            barcode_img.save(barcode_path.replace('.png', ''))
+        elif barcode_type == "EAN-13":
+            # EAN-13 requires exactly 12 digits (13th is checksum)
+            # Pad or truncate SKU to 12 digits
+            ean_sku = ''.join(filter(str.isdigit, sku))[:12].zfill(12)
+            ean13 = barcode.get_barcode_class('ean13')
+            barcode_img = ean13(ean_sku, writer=ImageWriter())
+            barcode_img.save(barcode_path.replace('.png', ''))
+        elif barcode_type == "EAN-8":
+            # EAN-8 requires exactly 7 digits (8th is checksum)
+            ean_sku = ''.join(filter(str.isdigit, sku))[:7].zfill(7)
+            ean8 = barcode.get_barcode_class('ean8')
+            barcode_img = ean8(ean_sku, writer=ImageWriter())
+            barcode_img.save(barcode_path.replace('.png', ''))
+        elif barcode_type == "UPC-A":
+            # UPC-A requires exactly 11 digits (12th is checksum)
+            upc_sku = ''.join(filter(str.isdigit, sku))[:11].zfill(11)
+            upca = barcode.get_barcode_class('upca')
+            barcode_img = upca(upc_sku, writer=ImageWriter())
+            barcode_img.save(barcode_path.replace('.png', ''))
+        else:
+            # Fallback to QR Code
+            qr = qrcode.QRCode(box_size=10, border=1)
+            qr.add_data(sku)
+            qr.make(fit=True)
+            qr_img = qr.make_image(fill_color="black", back_color="white")
+            qr_img.save(barcode_path)
+    except Exception as e:
+        # On error, fallback to QR Code
+        frappe.log_error(f"Error generating {barcode_type} for {sku}: {str(e)}", "Barcode Generation Error")
         qr = qrcode.QRCode(box_size=10, border=1)
         qr.add_data(sku)
         qr.make(fit=True)
         qr_img = qr.make_image(fill_color="black", back_color="white")
-        qr_img.save(qr_path)
-    return qr_path
+        qr_img.save(barcode_path)
+
+    return barcode_path
+
+
+# Keep old function for backwards compatibility
+def get_or_create_qr(sku, qr_dir):
+    """
+    Backwards compatibility wrapper for get_or_create_barcode
+    """
+    return get_or_create_barcode(sku, qr_dir, "QR Code")
 
 
 def wrap_text(c, text, font_name, font_size, max_width_pts, max_word_length=None):
     """
     Wrap text to fit within max_width_pts.
     Returns a list of text lines.
-    Handles breaking on both spaces and hyphens, trying to fit as much as possible per line.
-    If max_word_length is set, also splits words longer than that character count.
+
+    Priority order:
+    1. Try to fit whole words within max_width_pts (don't break on hyphens or spaces yet)
+    2. If word doesn't fit, break on hyphens
+    3. If max_word_length is set and any part exceeds it, split at character boundaries
+
+    This ensures Max Word Length takes precedence before breaking on hyphens or spaces.
     """
     import re
 
@@ -93,46 +288,56 @@ def wrap_text(c, text, font_name, font_size, max_width_pts, max_word_length=None
     current_line = ""
 
     for word in words:
-        # First, handle hyphenated words by splitting on hyphens
-        if '-' in word:
-            # Split "ABC-DEF-GHI" into ["ABC-", "DEF-", "GHI"]
-            parts = word.split('-')
-            hyphen_parts = [p + '-' for p in parts[:-1]] + [parts[-1]]
+        # PRIORITY 1: Try to fit the whole word first (including hyphens)
+        test_line = current_line + (" " if current_line else "") + word
+        test_width = c.stringWidth(test_line, font_name, font_size)
 
-            # If max_word_length is set, further split any parts that are too long
-            if max_word_length:
-                split_parts = []
+        if test_width <= max_width_pts:
+            # Word fits, add it
+            current_line = test_line
+        else:
+            # Word doesn't fit within available width
+            if current_line:
+                lines.append(current_line)
+                current_line = ""
+
+            # PRIORITY 2: Check if word has hyphens - break on hyphens if needed
+            if '-' in word:
+                # Split on hyphens: "ABC-DEF-GHI" -> ["ABC-", "DEF-", "GHI"]
+                parts = word.split('-')
+                hyphen_parts = [p + '-' for p in parts[:-1]] + [parts[-1]]
+
+                # PRIORITY 3: If max_word_length is set, check each part and split if needed
+                if max_word_length:
+                    final_parts = []
+                    for part in hyphen_parts:
+                        if len(part) > max_word_length:
+                            # Split this part at character boundaries
+                            for i in range(0, len(part), max_word_length):
+                                final_parts.append(part[i:i+max_word_length])
+                        else:
+                            final_parts.append(part)
+                    hyphen_parts = final_parts
+
+                # Now try to fit parts on lines
                 for part in hyphen_parts:
-                    if len(part) > max_word_length:
-                        # Split this part into character chunks
-                        for i in range(0, len(part), max_word_length):
-                            split_parts.append(part[i:i+max_word_length])
+                    test_line = current_line + (" " if current_line else "") + part
+                    test_width = c.stringWidth(test_line, font_name, font_size)
+
+                    if test_width <= max_width_pts:
+                        current_line = test_line
                     else:
-                        split_parts.append(part)
-                hyphen_parts = split_parts
-
-            # Try to fit as many parts as possible on current line
-            for i, part in enumerate(hyphen_parts):
-                test_line = current_line + (" " if current_line else "") + part
-                test_width = c.stringWidth(test_line, font_name, font_size)
-
-                if test_width <= max_width_pts:
-                    # This part fits, add it
-                    current_line = test_line
-                else:
-                    # This part doesn't fit
-                    if current_line:
-                        # Save current line and start new one with this part
-                        lines.append(current_line)
+                        if current_line:
+                            lines.append(current_line)
                         current_line = part
-                    else:
-                        # Even a single part is too long, add it anyway
-                        lines.append(part)
-                        current_line = ""
+            else:
+                # No hyphens in word
+                # PRIORITY 3: If max_word_length is set and word is too long, split at character boundaries
+                if max_word_length and len(word) > max_word_length:
+                    word_chunks = [word[i:i+max_word_length] for i in range(0, len(word), max_word_length)]
 
-                    # Add remaining parts, trying to fit as many as possible per line
-                    for remaining_part in hyphen_parts[i+1:]:
-                        test_line = current_line + (" " if current_line else "") + remaining_part
+                    for chunk in word_chunks:
+                        test_line = current_line + (" " if current_line else "") + chunk
                         test_width = c.stringWidth(test_line, font_name, font_size)
 
                         if test_width <= max_width_pts:
@@ -140,48 +345,49 @@ def wrap_text(c, text, font_name, font_size, max_width_pts, max_word_length=None
                         else:
                             if current_line:
                                 lines.append(current_line)
-                            current_line = remaining_part
-                    break  # Done processing this word
-            continue  # Move to next word
-
-        # If max_word_length is set and word is too long (and no hyphens), split by characters
-        if max_word_length and len(word) > max_word_length:
-            # Split word into chunks of max_word_length
-            word_chunks = [word[i:i+max_word_length] for i in range(0, len(word), max_word_length)]
-
-            # Process each chunk as a separate word
-            for chunk in word_chunks:
-                test_line = current_line + (" " if current_line else "") + chunk
-                test_width = c.stringWidth(test_line, font_name, font_size)
-
-                if test_width <= max_width_pts:
-                    current_line = test_line
+                            current_line = chunk
                 else:
-                    if current_line:
-                        lines.append(current_line)
-                    current_line = chunk
-            continue  # Move to next word
-
-        # Check if we can fit the whole word (no hyphens, not too long)
-        test_line = current_line + (" " if current_line else "") + word
-        test_width = c.stringWidth(test_line, font_name, font_size)
-
-        if test_width <= max_width_pts:
-            current_line = test_line
-        else:
-            # Word doesn't fit
-            if current_line:
-                lines.append(current_line)
-                current_line = word
-            else:
-                # Single word is too long, add it anyway
-                lines.append(word)
-                current_line = ""
+                    # Word doesn't fit and no way to split it, add it anyway
+                    current_line = word
 
     if current_line:
         lines.append(current_line)
 
     return lines if lines else [text]
+
+
+def draw_aligned_text(c, text, x, y, font_name, font_size, alignment="Left", available_width=None):
+    """
+    Draw text with specified alignment.
+
+    Args:
+        c: ReportLab canvas
+        text: Text to draw
+        x: X position (for Left alignment, this is the left edge; for Centre/Right, this is relative to available_width)
+        y: Y position
+        font_name: Font name
+        font_size: Font size
+        alignment: "Left", "Centre", or "Right"
+        available_width: Available width for Centre/Right alignment (in points)
+    """
+    text_width = c.stringWidth(text, font_name, font_size)
+
+    if alignment == "Centre":
+        # Center the text within available width
+        if available_width:
+            draw_x = x + (available_width - text_width) / 2
+        else:
+            draw_x = x - text_width / 2
+    elif alignment == "Right":
+        # Right align the text within available width
+        if available_width:
+            draw_x = x + available_width - text_width
+        else:
+            draw_x = x - text_width
+    else:  # Left alignment (default)
+        draw_x = x
+
+    c.drawString(draw_x, y, text)
 
 
 def draw_rotated_text(c, text, center_x, center_y, angle, font_name="Helvetica-Bold", font_size=8):
@@ -234,14 +440,21 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
     sku_font_type = config.get("sku_font_type", "Helvetica")
     sku_font_size = config.get("sku_font_size", 7)
     sku_max_word_length = config.get("sku_max_word_length")
+    sku_text_align = config.get("sku_text_align", "Centre")
     product_name_font_type = config.get("product_name_font_type", "Helvetica")
     product_name_font_size = config.get("product_name_font_size", 6)
     product_name_max_word_length = config.get("product_name_max_word_length")
+    product_name_text_align = config.get("product_name_text_align", "Left")
     price_font_type = config.get("price_font_type", "Helvetica-Bold")
     price_font_size = config.get("price_font_size", 10)
 
-    # Retrieve (or generate) the QR code image
-    qr_path = get_or_create_qr(sku, qr_dir)
+    # Get currency information from ERPNext Currency doctype
+    currency_code = config.get("currency", "CAD")
+    currency_info = get_currency_info(currency_code)
+
+    # Retrieve (or generate) the barcode/QR code image
+    barcode_type = config.get("barcode_type", "QR Code")
+    qr_path = get_or_create_barcode(sku, qr_dir, barcode_type)
 
     if orientation == "landscape":
         # Landscape Layout
@@ -249,7 +462,22 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
         # Draw the QR code if enabled
         if config.get("show_qr_code", True):
-            qr_size_pts = label_height_pts * 0.8  # 80% of label height
+            # Calculate QR code size based on offset input mode
+            offset_mode = config.get("offset_input_mode", "Percentage")
+            if offset_mode == "Inches":
+                # Use absolute size if specified, otherwise auto-calculate
+                qr_size_inch = config.get("qrcode_size_inch")
+                if qr_size_inch:
+                    qr_size_pts = qr_size_inch * inch
+                else:
+                    qr_size_pts = label_height_pts * 0.8  # Default: 80% of label height
+            else:  # Percentage mode
+                # Use percentage if specified, otherwise auto-calculate
+                qr_size_pct = config.get("qrcode_size_pct")
+                if qr_size_pct:
+                    qr_size_pts = (qr_size_pct / 100.0) * label_width_pts
+                else:
+                    qr_size_pts = label_height_pts * 0.8  # Default: 80% of label height
 
             # Position from left edge + offset, and from top edge - offset
             # (subtract qr_size_pts because drawImage uses bottom-left corner)
@@ -278,7 +506,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
             for i, line in enumerate(sku_lines):
                 line_y = sku_text_y - (i * sku_font_size * 1.2)  # 1.2 = line spacing
-                c.drawString(sku_text_x, line_y, line)
+                draw_aligned_text(c, line, sku_text_x, line_y, sku_font_type, sku_font_size, sku_text_align, available_width)
 
         # Draw product name if enabled with wrapping
         if config.get("show_product_name", False):
@@ -291,11 +519,11 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
             for i, line in enumerate(product_lines):
                 line_y = product_text_y - (i * product_name_font_size * 1.2)
-                c.drawString(product_text_x, line_y, line)
+                draw_aligned_text(c, line, product_text_x, line_y, product_name_font_type, product_name_font_size, product_name_text_align, available_width)
 
         # Draw the price if enabled
         if config.get("show_price", True):
-            price_text = f"${float(price):.2f}"
+            price_text = format_price(price, currency_info)
             price_x = x + price_x_offset
             price_y = y - price_y_offset
             price_rotation = config.get("price_rotation", 90)
@@ -309,7 +537,22 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
         # Draw QR code if enabled
         if config.get("show_qr_code", True):
-            qr_size_pts = min(label_width_pts, label_height_pts * 0.4)
+            # Calculate QR code size based on offset input mode
+            offset_mode = config.get("offset_input_mode", "Percentage")
+            if offset_mode == "Inches":
+                # Use absolute size if specified, otherwise auto-calculate
+                qr_size_inch = config.get("qrcode_size_inch")
+                if qr_size_inch:
+                    qr_size_pts = qr_size_inch * inch
+                else:
+                    qr_size_pts = min(label_width_pts, label_height_pts * 0.4)  # Default: smaller of width or 40% height
+            else:  # Percentage mode
+                # Use percentage if specified, otherwise auto-calculate
+                qr_size_pct = config.get("qrcode_size_pct")
+                if qr_size_pct:
+                    qr_size_pts = (qr_size_pct / 100.0) * label_width_pts
+                else:
+                    qr_size_pts = min(label_width_pts, label_height_pts * 0.4)  # Default: smaller of width or 40% height
 
             # Position purely from offsets (no automatic centering)
             qr_x = x + qr_x_offset
@@ -336,7 +579,7 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
             for i, line in enumerate(sku_lines):
                 line_y = sku_text_y - (i * sku_font_size * 1.2)  # 1.2 = line spacing
-                c.drawString(sku_text_x, line_y, line)
+                draw_aligned_text(c, line, sku_text_x, line_y, sku_font_type, sku_font_size, sku_text_align, available_width)
 
         # Draw product name if enabled with wrapping
         if config.get("show_product_name", False):
@@ -349,14 +592,14 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
 
             for i, line in enumerate(product_lines):
                 line_y = product_text_y - (i * product_name_font_size * 1.2)
-                c.drawString(product_text_x, line_y, line)
+                draw_aligned_text(c, line, product_text_x, line_y, product_name_font_type, product_name_font_size, product_name_text_align, available_width)
 
         # Draw price if enabled
         if config.get("show_price", True):
             price_text_x = x + price_x_offset
             price_text_y = y - price_y_offset - price_font_size
             c.setFont(price_font_type, price_font_size)
-            c.drawString(price_text_x, price_text_y, f"${float(price):.2f}")
+            c.drawString(price_text_x, price_text_y, format_price(price, currency_info))
 
 
 def create_labels_pdf(labels_data, label_type):

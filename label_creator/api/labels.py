@@ -195,6 +195,7 @@ def get_label_types():
         for lt in label_types_list:
             label_types[lt.label_type_name] = {
                 "name": lt.display_name,
+                "offset_input_mode": lt.get("offset_input_mode") or "Percentage",
                 "label_width": lt.label_width,
                 "label_height": lt.label_height,
                 "labels_per_row": lt.labels_per_row,
@@ -206,19 +207,29 @@ def get_label_types():
                 "margin_bottom": lt.margin_bottom or 0,
                 "margin_left": lt.margin_left or 0,
                 "margin_right": lt.margin_right or 0,
+                "barcode_type": lt.get("barcode_type") or "QR Code",
                 "qrcode_x_offset": lt.qrcode_x_offset or 0,
                 "qrcode_y_offset": lt.qrcode_y_offset or 0,
-                "qrcode_size_pts": lt.qrcode_size_pts or None,
+                "qrcode_x_offset_pct": lt.get("qrcode_x_offset_pct") or 0,
+                "qrcode_y_offset_pct": lt.get("qrcode_y_offset_pct") or 0,
+                "qrcode_size_inch": lt.get("qrcode_size_inch") or None,
+                "qrcode_size_pct": lt.get("qrcode_size_pct") or None,
+                "sku_sample": lt.get("sku_sample") or "SAM-PLE-SKU",
                 "sku_x_offset": lt.sku_x_offset or 0,
                 "sku_y_offset": lt.sku_y_offset or 0,
                 "sku_font_type": lt.get("sku_font_type") or "Helvetica",
                 "sku_font_size": lt.get("sku_font_size") or 7,
                 "sku_max_word_length": lt.get("sku_max_word_length") or 9,
+                "sku_text_align": lt.get("sku_text_align") or "Centre",
+                "product_name_sample": lt.get("product_name_sample") or "Sample Product Name",
                 "product_name_x_offset": lt.get("product_name_x_offset") or 0,
                 "product_name_y_offset": lt.get("product_name_y_offset") or 0,
                 "product_name_font_type": lt.get("product_name_font_type") or "Helvetica",
                 "product_name_font_size": lt.get("product_name_font_size") or 6,
                 "product_name_max_word_length": lt.get("product_name_max_word_length") or 9,
+                "product_name_text_align": lt.get("product_name_text_align") or "Left",
+                "price_sample": lt.get("price_sample") or 29.99,
+                "currency": lt.get("currency") or "CAD",
                 "price_x_offset": lt.price_x_offset or 0,
                 "price_y_offset": lt.price_y_offset or 0,
                 "price_rotation": lt.price_rotation or 0,
@@ -245,14 +256,16 @@ def get_label_types():
 
 
 @frappe.whitelist(allow_guest=False)
-def preview_label(label_type_config_json):
+def preview_single_label(label_type, sku, product_name, price):
     """
-    Generate a preview image of label page based on configuration
+    Generate a preview image of a single label for a specific product
+    Used for showing individual product label previews in the Label Creator UI
+    Uses the same draw_label function as actual label generation
     """
     try:
         import io
         import base64
-        from label_creator.utils.label_generator import draw_label, get_or_create_qr
+        from label_creator.utils.label_generator import draw_label, build_config_from_label_type
         from reportlab.lib.units import inch
 
         # Try to import PyMuPDF for PDF to image conversion
@@ -261,17 +274,155 @@ def preview_label(label_type_config_json):
             has_pymupdf = True
         except ImportError:
             has_pymupdf = False
-            frappe.log_error("PyMuPDF not available, falling back to PDF", "Label Preview Warning")
 
-        # Parse the configuration
-        config = json.loads(label_type_config_json)
+        # Get label type configuration using shared function
+        label_type_doc = frappe.get_doc("Label Type", label_type)
+        config = build_config_from_label_type(label_type_doc)
 
-        # Sample data for preview
-        sample_data = {
-            'sku': 'SAMPLE-123',
-            'product': 'Sample Product',
-            'display_price': '29.99'
+        # Get label dimensions
+        label_width_inch = config.get('label_width', 1)
+        label_height_inch = config.get('label_height', 1)
+
+        # Convert to points for ReportLab canvas
+        label_width = label_width_inch * inch
+        label_height = label_height_inch * inch
+
+        # Create a temporary directory for QR codes
+        qr_dir = frappe.get_site_path('public', 'files', 'label_creator', 'qr_codes')
+        os.makedirs(qr_dir, exist_ok=True)
+
+        # Create canvas in memory with just the label size
+        buffer = io.BytesIO()
+        c = canvas.Canvas(buffer, pagesize=(label_width, label_height))
+
+        # Draw the label at (0, label_height) - top-left corner
+        try:
+            draw_label(
+                c,
+                0,  # x position
+                label_height,  # y position (top of label)
+                sku,
+                product_name,
+                str(price),
+                label_width_inch,
+                label_height_inch,
+                config,
+                qr_dir
+            )
+        except Exception as label_error:
+            frappe.log_error(f"Error drawing single label: {str(label_error)}\n{frappe.get_traceback()}", "Single Label Draw Error")
+            return {
+                "success": False,
+                "message": f"Error drawing label: {str(label_error)}"
+            }
+
+        c.save()
+
+        # Get the PDF data
+        pdf_data = buffer.getvalue()
+        buffer.close()
+
+        # Convert PDF to image if PyMuPDF is available
+        if has_pymupdf:
+            try:
+                # Open PDF from bytes
+                pdf_document = fitz.open(stream=pdf_data, filetype="pdf")
+                page = pdf_document[0]  # Get first page
+
+                # Use high zoom for small labels to ensure clarity
+                zoom_factor = 4
+
+                # Render page to image
+                mat = fitz.Matrix(zoom_factor, zoom_factor)
+                pix = page.get_pixmap(matrix=mat)
+
+                # Convert to PNG
+                img_data = pix.tobytes("png")
+                pdf_document.close()
+
+                # Convert to base64
+                img_base64 = base64.b64encode(img_data).decode('utf-8')
+
+                return {
+                    "success": True,
+                    "image_data": img_base64,
+                    "image_type": "png"
+                }
+            except Exception as conv_error:
+                frappe.log_error(f"PDF to image conversion error: {str(conv_error)}\n{frappe.get_traceback()}", "Single Label Preview Conversion Error")
+                # Fall back to PDF
+                pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
+                return {
+                    "success": True,
+                    "pdf_data": pdf_base64,
+                    "image_type": "pdf"
+                }
+        else:
+            # Fallback to PDF if conversion library not available
+            pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
+            return {
+                "success": True,
+                "pdf_data": pdf_base64,
+                "image_type": "pdf"
+            }
+
+    except Exception as e:
+        error_traceback = frappe.get_traceback()
+        frappe.log_error(error_traceback, "Single Label Preview Error")
+        return {
+            "success": False,
+            "message": f"Error: {str(e)}",
+            "traceback": error_traceback if frappe.conf.developer_mode else None
         }
+
+
+@frappe.whitelist(allow_guest=False)
+def preview_label(label_type_name=None, label_type_config_json=None):
+    """
+    Generate a preview image of label page based on Label Type
+    Can accept either label_type_name OR label_type_config_json for backwards compatibility
+    Uses the same draw_label function as actual label generation
+    """
+    try:
+        import io
+        import base64
+        from label_creator.utils.label_generator import draw_label, build_config_from_label_type
+        from reportlab.lib.units import inch
+
+        # Try to import PyMuPDF for PDF to image conversion
+        try:
+            import fitz  # PyMuPDF
+            has_pymupdf = True
+        except ImportError:
+            has_pymupdf = False
+
+        # Get configuration using shared builder if label_type_name provided
+        if label_type_name:
+            label_type_doc = frappe.get_doc("Label Type", label_type_name)
+            config = build_config_from_label_type(label_type_doc)
+            # Add page layout fields
+            config['labels_per_row'] = label_type_doc.labels_per_row
+            config['labels_per_column'] = label_type_doc.labels_per_column
+            config['page_width_inch'] = label_type_doc.page_width_inch
+            config['page_height_inch'] = label_type_doc.page_height_inch
+            config['margin_top'] = label_type_doc.margin_top or 0
+            config['margin_bottom'] = label_type_doc.margin_bottom or 0
+            config['margin_left'] = label_type_doc.margin_left or 0
+            config['margin_right'] = label_type_doc.margin_right or 0
+            # Get sample data
+            sample_data = {
+                'sku': label_type_doc.get('sku_sample') or 'SAM-PLE-SKU',
+                'product': label_type_doc.get('product_name_sample') or 'Sample Product Name',
+                'display_price': str(label_type_doc.get('price_sample') or 29.99)
+            }
+        else:
+            # Backwards compatibility: parse JSON config
+            config = json.loads(label_type_config_json)
+            sample_data = {
+                'sku': config.get('sku_sample', 'SAM-PLE-SKU'),
+                'product': config.get('product_name_sample', 'Sample Product Name'),
+                'display_price': str(config.get('price_sample', 29.99))
+            }
 
         # Get page and label dimensions
         page_width_inch = config.get('page_width_inch', 8.5)
