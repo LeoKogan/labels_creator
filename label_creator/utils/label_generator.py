@@ -1,14 +1,26 @@
 import os
 import json
 import qrcode
-import barcode
-from barcode.writer import ImageWriter
 import frappe
 from datetime import datetime
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph
+
+# Lazy import for barcode module - only imported when needed
+# This prevents the entire module from failing if barcode is not installed
+try:
+    import barcode
+    from barcode.writer import ImageWriter
+    HAS_BARCODE = True
+except ImportError:
+    HAS_BARCODE = False
+    frappe.log_error(
+        "python-barcode module is not installed. Only QR codes will be available.\n\n"
+        "To install: bench pip install python-barcode",
+        "Barcode Module Not Found"
+    )
 
 
 def get_currency_info(currency_code):
@@ -171,7 +183,19 @@ def get_or_create_barcode(sku, barcode_dir, barcode_type="QR Code"):
     """
     Retrieve (or generate) the barcode/QR code image for a given SKU.
     Supports: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A
+
+    If python-barcode module is not installed, falls back to QR Code.
     """
+    # Check if barcode module is available for non-QR code types
+    if not HAS_BARCODE and barcode_type != "QR Code":
+        frappe.msgprint(
+            f"python-barcode module is not installed. Falling back to QR Code instead of {barcode_type}.<br><br>"
+            "To enable other barcode types, run: <code>bench pip install python-barcode</code>",
+            title="Barcode Module Not Available",
+            indicator="orange"
+        )
+        barcode_type = "QR Code"  # Fallback to QR Code
+
     # Sanitize SKU for filename
     safe_sku = "".join(c if c.isalnum() or c in "-_" else "_" for c in sku)
     barcode_filename = f"{safe_sku}_{barcode_type.replace(' ', '_').replace('-', '_')}.png"
