@@ -1,8 +1,8 @@
 {% extends "templates/web.html" %}
 
-<!-- Label Creator v2.5.4 - Updated: 2026-01-05 02:45 UTC - Cache Buster: 20260105024500 -->
+<!-- Label Creator v2.5.5 - Updated: 2026-01-05 03:00 UTC - Cache Buster: 20260105030000 -->
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ title %}{% endblock %}
 
 {% block page_content %}
 <div class="container mt-4" style="max-width: 1200px;">
@@ -56,15 +56,6 @@
                                 <option value="">Loading...</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <!-- Label Type Preview - shown next to selector -->
-                            <div id="labelTypePreview" style="display: none;">
-                                <label class="form-label">Sample Label Preview</label>
-                                <div class="text-center" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px; background-color: #f8f9fa;">
-                                    <img id="labelTypePreviewImage" src="" alt="Label Preview" style="max-width: 100%; max-height: 200px; object-fit: contain;">
-                                </div>
-                            </div>
-                        </div>
                         <div class="col-md-4 d-flex align-items-end">
                             <div>
                                 <button id="generateBtn" class="btn btn-success me-2">
@@ -73,6 +64,18 @@
                                 <button id="startOverBtn" class="btn btn-secondary">
                                     Start Over
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Label Type Preview - shown below selector -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <div id="labelTypePreview" style="display: none;">
+                                <label class="form-label">Sample Label Preview</label>
+                                <div class="text-center" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px; background-color: #f8f9fa;">
+                                    <img id="labelTypePreviewImage" src="" alt="Label Preview" style="max-width: 100%; max-height: 250px; object-fit: contain;">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -151,7 +154,7 @@
     <footer class="mt-5 pt-4 border-top">
         <div class="row">
             <div class="col-md-12 text-center text-muted">
-                <small>Label Creator v2.5.4 | Last Updated: 2026-01-05 02:45 UTC | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
+                <small>Label Creator v2.5.5 | Last Updated: 2026-01-05 03:00 UTC | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
             </div>
         </div>
     </footer>
@@ -434,11 +437,38 @@ uploadBtn.addEventListener('click', function() {
                     callback: function(response) {
                         document.getElementById('loadingSpinner').style.display = 'none';
 
-                        if (response.message && response.message.success) {
-                            // Validate that processed_content is an array
+                        console.log('Upload response received:', response);
+
+                        // First, check if response and response.message exist
+                        if (!response || !response.message) {
+                            console.error('Invalid response structure:', response);
+                            showError('Server returned invalid response. Please check the Error Log.');
+                            return;
+                        }
+
+                        // Check if response.message is a string (might be HTML error)
+                        if (typeof response.message === 'string') {
+                            console.error('Response message is a string (possibly HTML error):', response.message);
+                            // Check if it looks like HTML
+                            if (response.message.includes('<html>') || response.message.includes('<!DOCTYPE')) {
+                                showError('Server returned an HTML error page. Please check the Error Log for details.');
+                            } else {
+                                showError('Error: ' + response.message);
+                            }
+                            return;
+                        }
+
+                        if (response.message.success) {
+                            // Validate that processed_content exists and is an array
+                            if (!response.message.processed_content) {
+                                console.error('Missing processed_content in response');
+                                showError('Server response is missing product data.');
+                                return;
+                            }
+
                             if (!Array.isArray(response.message.processed_content)) {
                                 console.error('Invalid processed_content - not an array:', response.message.processed_content);
-                                showError('Server returned invalid data. Please check the Error Log for details.');
+                                showError('Server returned invalid data format. Expected array, got: ' + typeof response.message.processed_content);
                                 return;
                             }
 
@@ -449,14 +479,29 @@ uploadBtn.addEventListener('click', function() {
 
                             if (invalidItems.length > 0) {
                                 console.error('Invalid items in processed_content:', invalidItems);
-                                showError('Server returned invalid product data. Please check the Error Log for details.');
+                                showError(`Found ${invalidItems.length} invalid item(s) in product data. Please check the Error Log.`);
                                 return;
                             }
 
+                            // Extra validation: check for HTML in item values
+                            const htmlPattern = /<[^>]+>/;
+                            const itemsWithHtml = response.message.processed_content.filter(item =>
+                                htmlPattern.test(String(item.sku)) ||
+                                htmlPattern.test(String(item.product)) ||
+                                htmlPattern.test(String(item.display_price))
+                            );
+
+                            if (itemsWithHtml.length > 0) {
+                                console.error('Items contain HTML:', itemsWithHtml);
+                                showError('Product data contains HTML content. Server may have returned an error page.');
+                                return;
+                            }
+
+                            console.log('Validation passed. Processing', response.message.processed_content.length, 'items');
                             processedContent = response.message.processed_content;
                             displayPreview(processedContent, response.message.total_labels);
                         } else {
-                            const errorMsg = response.message?.message || response.message || 'Unknown error processing files';
+                            const errorMsg = response.message.message || 'Unknown error processing files';
                             console.error('Upload processing failed:', errorMsg);
                             showError(errorMsg);
                         }
