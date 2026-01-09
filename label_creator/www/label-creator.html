@@ -1,6 +1,6 @@
 {% extends "templates/web.html" %}
 
-<!-- Label Creator v2.5.4 - Updated: 2026-01-05 02:45 UTC - Cache Buster: 20260105024500 -->
+<!-- Label Creator v2.6.0 - Updated: 2026-01-09 - Cache Buster: 20260109010000 -->
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -56,15 +56,6 @@
                                 <option value="">Loading...</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <!-- Label Type Preview - shown next to selector -->
-                            <div id="labelTypePreview" style="display: none;">
-                                <label class="form-label">Sample Label Preview</label>
-                                <div class="text-center" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px; background-color: #f8f9fa;">
-                                    <img id="labelTypePreviewImage" src="" alt="Label Preview" style="max-width: 100%; max-height: 200px; object-fit: contain;">
-                                </div>
-                            </div>
-                        </div>
                         <div class="col-md-4 d-flex align-items-end">
                             <div>
                                 <button id="generateBtn" class="btn btn-success me-2">
@@ -73,6 +64,26 @@
                                 <button id="startOverBtn" class="btn btn-secondary">
                                     Start Over
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Single Label Preview - inline, below selector -->
+                    <div class="row mb-3" id="singleLabelPreviewSection" style="display: none;">
+                        <div class="col-md-12">
+                            <div class="d-flex align-items-center gap-3">
+                                <div id="singleLabelPreview" class="text-center" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px; background-color: #f8f9fa; min-width: 120px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                                    <div class="text-muted">Loading...</div>
+                                </div>
+                                <div>
+                                    <p class="mb-2 text-muted" style="font-size: 14px;">Single label preview</p>
+                                    <button id="openPagePreviewBtn" class="btn btn-outline-primary btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid me-1" viewBox="0 0 16 16">
+                                            <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/>
+                                        </svg>
+                                        Open Sample Page Preview
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -147,11 +158,34 @@
         </div>
     </div>
 
+    <!-- Sample Page Preview Modal -->
+    <div class="modal fade" id="pagePreviewModal" tabindex="-1" aria-labelledby="pagePreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pagePreviewModalLabel">Sample Page Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center" style="max-height: 70vh; overflow-y: auto;">
+                    <div id="pagePreviewContent">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Generating preview...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Version Footer -->
     <footer class="mt-5 pt-4 border-top">
         <div class="row">
             <div class="col-md-12 text-center text-muted">
-                <small>Label Creator v2.5.4 | Last Updated: 2026-01-05 02:45 UTC | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
+                <small>Label Creator v2.6.0 | Last Updated: 2026-01-09 | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
             </div>
         </div>
     </footer>
@@ -218,18 +252,34 @@
     object-fit: contain;
 }
 
-/* Label type preview styling - shown next to selector */
-#labelTypePreview {
-    min-height: 150px;
+/* Single label preview styling */
+#singleLabelPreview {
+    min-width: 120px;
+    min-height: 120px;
+    max-width: 200px;
 }
 
-#labelTypePreview img {
-    max-height: 200px;
-    transition: opacity 0.3s ease-in-out;
+#singleLabelPreview img {
+    max-width: 150px;
+    max-height: 150px;
+    object-fit: contain;
 }
 
-#labelTypePreview img.loading {
-    opacity: 0.5;
+#singleLabelPreview.loading {
+    opacity: 0.6;
+}
+
+/* Page preview modal styling */
+#pagePreviewContent img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#pagePreviewContent .error-state {
+    color: #dc3545;
+    padding: 20px;
 }
 </style>
 {% endblock %}
@@ -302,13 +352,13 @@ function loadLabelTypes() {
                 // Add event listener to show preview when label type changes
                 select.addEventListener('change', function() {
                     if (this.value) {
-                        loadLabelTypePreview(this.value);
+                        loadSingleLabelPreviewForType(this.value);
                         // Refresh row previews if data is loaded
                         if (processedContent.length > 0) {
                             refreshRowPreviews();
                         }
                     } else {
-                        document.getElementById('labelTypePreview').style.display = 'none';
+                        document.getElementById('singleLabelPreviewSection').style.display = 'none';
                     }
                 });
 
@@ -316,8 +366,11 @@ function loadLabelTypes() {
                 if (Object.keys(labelTypesData).length > 0) {
                     const firstKey = Object.keys(labelTypesData)[0];
                     select.value = firstKey;
-                    loadLabelTypePreview(firstKey);
+                    loadSingleLabelPreviewForType(firstKey);
                 }
+
+                // Add event listener for the page preview button
+                document.getElementById('openPagePreviewBtn').addEventListener('click', openPagePreviewModal);
             }
         },
         error: function(error) {
@@ -327,56 +380,121 @@ function loadLabelTypes() {
     });
 }
 
-function loadLabelTypePreview(labelTypeName) {
-    console.log('Loading label type preview for:', labelTypeName);
+function loadSingleLabelPreviewForType(labelTypeName) {
+    console.log('Loading single label preview for type:', labelTypeName);
 
     if (!labelTypeName) {
         console.error('No label type name provided');
         return;
     }
 
-    const previewSection = document.getElementById('labelTypePreview');
-    const previewImage = document.getElementById('labelTypePreviewImage');
+    const previewSection = document.getElementById('singleLabelPreviewSection');
+    const previewContainer = document.getElementById('singleLabelPreview');
 
     // Show preview section with loading state
     previewSection.style.display = 'block';
-    previewImage.classList.add('loading');
-    previewImage.alt = 'Loading preview...';
+    previewContainer.classList.add('loading');
+    previewContainer.innerHTML = '<div class="text-muted">Loading...</div>';
 
+    // Get sample data from label type configuration
+    const labelConfig = labelTypesData[labelTypeName];
+    const sampleSku = labelConfig?.sku_sample || 'SAM-PLE-SKU';
+    const sampleProduct = labelConfig?.product_name_sample || 'Sample Product Name';
+    const samplePrice = labelConfig?.price_sample || 29.99;
+
+    frappe.call({
+        method: 'label_creator.api.labels.preview_single_label',
+        args: {
+            label_type: labelTypeName,
+            sku: sampleSku,
+            product_name: sampleProduct,
+            price: String(samplePrice)
+        },
+        callback: function(response) {
+            console.log('Single label preview response:', response);
+
+            previewContainer.classList.remove('loading');
+
+            if (response.message && response.message.success) {
+                if (response.message.image_type === 'png' && response.message.image_data) {
+                    const img = document.createElement('img');
+                    img.src = 'data:image/png;base64,' + response.message.image_data;
+                    img.alt = 'Label Preview';
+                    previewContainer.innerHTML = '';
+                    previewContainer.appendChild(img);
+                    console.log('Loaded PNG preview for single label');
+                } else if (response.message.pdf_data) {
+                    // PDF can't be displayed in img tag - show placeholder with message
+                    previewContainer.innerHTML = '<div class="text-muted" style="font-size: 12px;"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-file-earmark-pdf mb-2" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/><path d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388-.13-.776.08-1.102.198-.307.526-.568.897-.787a7.68 7.68 0 0 1 1.482-.645 19.697 19.697 0 0 0 1.062-2.227 7.269 7.269 0 0 1-.43-1.295c-.086-.4-.119-.796-.046-1.136.075-.354.274-.672.65-.823.192-.077.4-.12.602-.077a.7.7 0 0 1 .477.365c.088.164.12.356.127.538.007.188-.012.396-.047.614-.084.51-.27 1.134-.52 1.794a10.954 10.954 0 0 0 .98 1.686 5.753 5.753 0 0 1 1.334.05c.364.066.734.195.96.465.12.144.193.32.2.518.007.192-.047.382-.138.563a1.04 1.04 0 0 1-.354.416.856.856 0 0 1-.51.138c-.331-.014-.654-.196-.933-.417a5.712 5.712 0 0 1-.911-.95 11.651 11.651 0 0 0-1.997.406 11.307 11.307 0 0 1-1.02 1.51c-.292.35-.609.656-.927.787a.793.793 0 0 1-.58.029z"/></svg><br>Preview generated<br><small>(PDF format)</small></div>';
+                    console.log('PDF preview - showing placeholder');
+                } else {
+                    previewContainer.innerHTML = '<div class="text-danger" style="font-size: 12px;">No preview data</div>';
+                }
+            } else {
+                console.error('Single label preview failed:', response.message);
+                const errorMsg = response.message?.message || 'Preview failed';
+                previewContainer.innerHTML = '<div class="text-danger" style="font-size: 12px;">Preview failed</div>';
+                previewContainer.title = errorMsg;
+            }
+        },
+        error: function(error) {
+            console.error('Error loading single label preview:', error);
+            previewContainer.classList.remove('loading');
+            previewContainer.innerHTML = '<div class="text-danger" style="font-size: 12px;">Error loading</div>';
+        }
+    });
+}
+
+function openPagePreviewModal() {
+    const labelTypeName = document.getElementById('labelType').value;
+    if (!labelTypeName) {
+        alert('Please select a label type first');
+        return;
+    }
+
+    const previewContent = document.getElementById('pagePreviewContent');
+
+    // Show loading state
+    previewContent.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2 text-muted">Generating preview...</p>';
+
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('pagePreviewModal'));
+    modal.show();
+
+    // Load the full page preview
     frappe.call({
         method: 'label_creator.api.labels.preview_label',
         args: {
             label_type_name: labelTypeName
         },
         callback: function(response) {
-            console.log('Label type preview response:', response);
-
-            previewImage.classList.remove('loading');
+            console.log('Page preview response:', response);
 
             if (response.message && response.message.success) {
-                if (response.message.image_type === 'png') {
-                    previewImage.src = 'data:image/png;base64,' + response.message.image_data;
-                    console.log('Loaded PNG preview');
+                if (response.message.image_type === 'png' && response.message.image_data) {
+                    const img = document.createElement('img');
+                    img.src = 'data:image/png;base64,' + response.message.image_data;
+                    img.alt = 'Sample Page Preview';
+                    img.style.maxWidth = '100%';
+                    previewContent.innerHTML = '';
+                    previewContent.appendChild(img);
+                    console.log('Loaded PNG page preview');
                 } else if (response.message.pdf_data) {
-                    previewImage.src = 'data:application/pdf;base64,' + response.message.pdf_data;
-                    console.log('Loaded PDF preview');
+                    // For PDF, use an embed element
+                    previewContent.innerHTML = '<embed src="data:application/pdf;base64,' + response.message.pdf_data + '" type="application/pdf" width="100%" height="500px" /><p class="mt-2 text-muted"><small>If the preview doesn\'t display, your browser may not support inline PDF viewing.</small></p>';
+                    console.log('Loaded PDF page preview');
+                } else {
+                    previewContent.innerHTML = '<div class="error-state">No preview data available</div>';
                 }
-                previewImage.alt = 'Label Preview';
             } else {
-                console.error('Label type preview failed:', response.message);
-                const errorMsg = response.message?.message || response.message || 'Unknown error';
-                console.error('Error details:', errorMsg);
-                if (response.message?.traceback) {
-                    console.error('Traceback:', response.message.traceback);
-                }
-                previewImage.alt = 'Preview failed';
-                previewImage.title = errorMsg;
+                const errorMsg = response.message?.message || 'Unknown error';
+                previewContent.innerHTML = '<div class="error-state">Failed to generate preview: ' + errorMsg + '</div>';
+                console.error('Page preview failed:', errorMsg);
             }
         },
         error: function(error) {
-            console.error('Error loading label type preview:', error);
-            previewImage.classList.remove('loading');
-            previewImage.alt = 'Error loading preview';
+            console.error('Error loading page preview:', error);
+            previewContent.innerHTML = '<div class="error-state">Error loading preview. Please try again.</div>';
         }
     });
 }
@@ -605,57 +723,63 @@ function loadSingleLabelPreview(index, sku, productName, price) {
 
     console.log(`Loading preview for index ${index}: ${sku}, ${productName}, $${price}`);
 
+    const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
+    if (previewCell) {
+        previewCell.innerHTML = '<div class="text-muted" style="font-size: 12px;">Loading...</div>';
+    }
+
     frappe.call({
         method: 'label_creator.api.labels.preview_single_label',
         args: {
             label_type: labelType,
             sku: sku,
             product_name: productName,
-            price: price
+            price: String(price)
         },
         callback: function(response) {
             console.log(`Preview response for index ${index}:`, response);
 
+            const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
+            if (!previewCell) {
+                console.warn(`Preview cell not found for index ${index}`);
+                return;
+            }
+
             if (response.message && response.message.success) {
-                const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
-                if (previewCell) {
+                if (response.message.image_type === 'png' && response.message.image_data) {
                     const img = document.createElement('img');
                     img.style.maxWidth = '80px';
                     img.style.maxHeight = '80px';
                     img.style.border = '1px solid #ddd';
                     img.style.borderRadius = '4px';
                     img.alt = 'Label Preview';
-
-                    if (response.message.image_type === 'png') {
-                        img.src = 'data:image/png;base64,' + response.message.image_data;
-                    } else if (response.message.pdf_data) {
-                        img.src = 'data:application/pdf;base64,' + response.message.pdf_data;
-                    }
+                    img.src = 'data:image/png;base64,' + response.message.image_data;
 
                     previewCell.innerHTML = '';
                     previewCell.appendChild(img);
                     console.log(`Preview loaded successfully for index ${index}`);
+                } else if (response.message.pdf_data) {
+                    // PDF can't be displayed in img tag - show a small placeholder
+                    previewCell.innerHTML = '<div class="text-muted" style="font-size: 10px;" title="PDF preview generated"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg><br>OK</div>';
+                    console.log(`PDF preview for index ${index} - showing placeholder`);
+                } else {
+                    previewCell.innerHTML = '<div class="text-warning" style="font-size: 11px;">No data</div>';
                 }
             } else {
                 console.error(`Preview failed for index ${index}:`, response.message);
                 if (response.message?.traceback) {
                     console.error('Traceback:', response.message.traceback);
                 }
-                const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
-                if (previewCell) {
-                    previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;">Error</div>';
-                    const errorMsg = response.message?.message || response.message || 'Unknown error';
-                    previewCell.title = errorMsg;
-                    console.error(`Full error for row ${index}:`, errorMsg);
-                }
+                const errorMsg = response.message?.message || response.message || 'Unknown error';
+                previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;" title="' + errorMsg.replace(/"/g, '&quot;') + '">Error</div>';
+                console.error(`Full error for row ${index}:`, errorMsg);
             }
         },
         error: function(error) {
             console.error('Error loading single label preview:', error);
             const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
             if (previewCell) {
-                previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;">Error</div>';
-                previewCell.title = error.message || 'Network error';
+                previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;" title="' + (error.message || 'Network error').replace(/"/g, '&quot;') + '">Error</div>';
             }
         }
     });
