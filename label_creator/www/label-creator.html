@@ -2,7 +2,7 @@
 
 <!-- Label Creator v2.6.0 - Updated: 2026-01-09 - Cache Buster: 20260109010000 -->
 
-{% block title %}{{ title %}{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 
 {% block page_content %}
 <div class="container mt-4" style="max-width: 1200px;">
@@ -284,6 +284,7 @@
 </style>
 {% endblock %}
 
+{% raw %}
 <script>
 let processedContent = [];
 
@@ -1012,4 +1013,5 @@ document.getElementById('tryAgainBtn').addEventListener('click', function() {
     location.reload();
 });
 </script>
+{% endraw %}
 {% endblock %}
