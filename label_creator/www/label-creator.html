@@ -287,6 +287,14 @@
 <script>
 let processedContent = [];
 
+// Helper function to escape HTML to prevent XSS attacks
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    var div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
 // Ensure frappe is available
 if (typeof frappe === 'undefined') {
     window.frappe = {
@@ -498,7 +506,7 @@ function openPagePreviewModal() {
                 }
             } else {
                 var errorMsg = (response.message && response.message.message) ? response.message.message : 'Unknown error';
-                previewContent.innerHTML = '<div class="error-state">Failed to generate preview: ' + errorMsg + '</div>';
+                previewContent.innerHTML = '<div class="error-state">Failed to generate preview: ' + escapeHtml(errorMsg) + '</div>';
                 console.error('Page preview failed:', errorMsg);
             }
         },
@@ -842,7 +850,13 @@ function loadSingleLabelPreview(index, sku, productName, price) {
                     console.error('Traceback:', response.message.traceback);
                 }
                 var errorMsg = (response.message && response.message.message) ? response.message.message : 'Unknown error';
-                cell.innerHTML = '<div class="text-danger" style="font-size: 11px;" title="' + String(errorMsg).replace(/"/g, '&quot;') + '">Error</div>';
+                var errorDiv = document.createElement('div');
+                errorDiv.className = 'text-danger';
+                errorDiv.style.fontSize = '11px';
+                errorDiv.title = String(errorMsg);  // Safe: title attribute is text, not HTML
+                errorDiv.textContent = 'Error';
+                cell.innerHTML = '';
+                cell.appendChild(errorDiv);
                 console.error('Full error for row ' + index + ':', errorMsg);
             }
         },
@@ -850,7 +864,13 @@ function loadSingleLabelPreview(index, sku, productName, price) {
             console.error('Error loading single label preview:', error);
             var cell = document.querySelector('.label-preview-cell[data-index="' + index + '"]');
             if (cell) {
-                cell.innerHTML = '<div class="text-danger" style="font-size: 11px;" title="' + (error.message || 'Network error').replace(/"/g, '&quot;') + '">Error</div>';
+                var errorDiv = document.createElement('div');
+                errorDiv.className = 'text-danger';
+                errorDiv.style.fontSize = '11px';
+                errorDiv.title = error.message || 'Network error';  // Safe: title is text
+                errorDiv.textContent = 'Error';
+                cell.innerHTML = '';
+                cell.appendChild(errorDiv);
             }
         }
     });

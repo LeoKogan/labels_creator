@@ -18,6 +18,7 @@ def upload_and_process(files_json):
         files_data = json.loads(files_json)
         aggregated_content = {}
         total_labels = 0
+        skipped_rows = []  # Track rows that were skipped due to parsing errors
 
         for file_data in files_data:
             content = file_data.get('content', '')
@@ -70,7 +71,9 @@ def upload_and_process(files_json):
 
             # Process File Type 1: product, sku, quantity, display_price
             if has_format1:
+                row_number = 1  # Start after header
                 for row in reader:
+                    row_number += 1
                     try:
                         sku = row[header_map['sku']].strip()
                         product = row[header_map['product']].strip()
@@ -78,6 +81,7 @@ def upload_and_process(files_json):
                         quantity = int(row[header_map['quantity']])
 
                         if not sku:  # Skip rows with empty SKU
+                            skipped_rows.append(f"{filename}:row {row_number} - empty SKU")
                             continue
 
                         if sku not in aggregated_content:
@@ -89,14 +93,20 @@ def upload_and_process(files_json):
                             }
                         aggregated_content[sku]["quantity"] += quantity
                         total_labels += quantity
-                    except (ValueError, IndexError):
+                    except ValueError as e:
+                        skipped_rows.append(f"{filename}:row {row_number} - invalid value: {str(e)}")
+                        continue
+                    except IndexError as e:
+                        skipped_rows.append(f"{filename}:row {row_number} - missing column")
                         continue
 
             # Process File Type 2: name, sku, retail_price
             elif has_format2:
                 inventory_columns = [col for col in header_map.keys() if col.startswith('inventory_')]
+                row_number = 1  # Start after header
 
                 for row in reader:
+                    row_number += 1
                     try:
                         sku = row[header_map['sku']].strip()
                         product_name = row[header_map['name']].strip()
@@ -107,6 +117,7 @@ def upload_and_process(files_json):
                         )
 
                         if not sku:  # Skip rows with empty SKU
+                            skipped_rows.append(f"{filename}:row {row_number} - empty SKU")
                             continue
 
                         if sku not in aggregated_content:
@@ -118,7 +129,11 @@ def upload_and_process(files_json):
                             }
                         aggregated_content[sku]["quantity"] += quantity
                         total_labels += quantity
-                    except (ValueError, IndexError):
+                    except ValueError as e:
+                        skipped_rows.append(f"{filename}:row {row_number} - invalid value: {str(e)}")
+                        continue
+                    except IndexError:
+                        skipped_rows.append(f"{filename}:row {row_number} - missing column")
                         continue
 
         if not aggregated_content:
@@ -129,10 +144,19 @@ def upload_and_process(files_json):
 
         processed_content = list(aggregated_content.values())
 
+        # Log skipped rows if any
+        if skipped_rows:
+            frappe.log_error(
+                f"Skipped {len(skipped_rows)} rows during CSV processing:\n" + "\n".join(skipped_rows[:50]),
+                "Label Creator - Skipped Rows"
+            )
+
         return {
             "success": True,
             "processed_content": processed_content,
-            "total_labels": total_labels
+            "total_labels": total_labels,
+            "skipped_rows_count": len(skipped_rows),
+            "skipped_rows_sample": skipped_rows[:5] if skipped_rows else []  # Return first 5 for UI display
         }
 
     except Exception as e:
