@@ -1,6 +1,6 @@
 {% extends "templates/web.html" %}
 
-<!-- Label Creator v2.5.4 - Updated: 2026-01-05 02:45 UTC - Cache Buster: 20260105024500 -->
+<!-- Label Creator v2.6.0 - Updated: 2026-01-09 - Cache Buster: 20260109010000 -->
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -56,15 +56,6 @@
                                 <option value="">Loading...</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <!-- Label Type Preview - shown next to selector -->
-                            <div id="labelTypePreview" style="display: none;">
-                                <label class="form-label">Sample Label Preview</label>
-                                <div class="text-center" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px; background-color: #f8f9fa;">
-                                    <img id="labelTypePreviewImage" src="" alt="Label Preview" style="max-width: 100%; max-height: 200px; object-fit: contain;">
-                                </div>
-                            </div>
-                        </div>
                         <div class="col-md-4 d-flex align-items-end">
                             <div>
                                 <button id="generateBtn" class="btn btn-success me-2">
@@ -73,6 +64,26 @@
                                 <button id="startOverBtn" class="btn btn-secondary">
                                     Start Over
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Single Label Preview - inline, below selector -->
+                    <div class="row mb-3" id="singleLabelPreviewSection" style="display: none;">
+                        <div class="col-md-12">
+                            <div class="d-flex align-items-center gap-3">
+                                <div id="singleLabelPreview" class="text-center" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px; background-color: #f8f9fa; min-width: 120px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+                                    <div class="text-muted">Loading...</div>
+                                </div>
+                                <div>
+                                    <p class="mb-2 text-muted" style="font-size: 14px;">Single label preview</p>
+                                    <button id="openPagePreviewBtn" class="btn btn-outline-primary btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid me-1" viewBox="0 0 16 16">
+                                            <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/>
+                                        </svg>
+                                        Open Sample Page Preview
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -147,11 +158,34 @@
         </div>
     </div>
 
+    <!-- Sample Page Preview Modal -->
+    <div class="modal fade" id="pagePreviewModal" tabindex="-1" aria-labelledby="pagePreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pagePreviewModalLabel">Sample Page Preview</h5>
+                    <button type="button" class="btn-close" onclick="closePagePreviewModal()" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center" style="max-height: 70vh; overflow-y: auto;">
+                    <div id="pagePreviewContent">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Generating preview...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closePagePreviewModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Version Footer -->
     <footer class="mt-5 pt-4 border-top">
         <div class="row">
             <div class="col-md-12 text-center text-muted">
-                <small>Label Creator v2.5.4 | Last Updated: 2026-01-05 02:45 UTC | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
+                <small>Label Creator v2.6.0 | Last Updated: 2026-01-09 | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
             </div>
         </div>
     </footer>
@@ -218,18 +252,34 @@
     object-fit: contain;
 }
 
-/* Label type preview styling - shown next to selector */
-#labelTypePreview {
-    min-height: 150px;
+/* Single label preview styling */
+#singleLabelPreview {
+    min-width: 120px;
+    min-height: 120px;
+    max-width: 200px;
 }
 
-#labelTypePreview img {
-    max-height: 200px;
-    transition: opacity 0.3s ease-in-out;
+#singleLabelPreview img {
+    max-width: 150px;
+    max-height: 150px;
+    object-fit: contain;
 }
 
-#labelTypePreview img.loading {
-    opacity: 0.5;
+#singleLabelPreview.loading {
+    opacity: 0.6;
+}
+
+/* Page preview modal styling */
+#pagePreviewContent img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#pagePreviewContent .error-state {
+    color: #dc3545;
+    padding: 20px;
 }
 </style>
 {% endblock %}
@@ -302,13 +352,13 @@ function loadLabelTypes() {
                 // Add event listener to show preview when label type changes
                 select.addEventListener('change', function() {
                     if (this.value) {
-                        loadLabelTypePreview(this.value);
+                        loadSingleLabelPreviewForType(this.value);
                         // Refresh row previews if data is loaded
                         if (processedContent.length > 0) {
                             refreshRowPreviews();
                         }
                     } else {
-                        document.getElementById('labelTypePreview').style.display = 'none';
+                        document.getElementById('singleLabelPreviewSection').style.display = 'none';
                     }
                 });
 
@@ -316,8 +366,11 @@ function loadLabelTypes() {
                 if (Object.keys(labelTypesData).length > 0) {
                     const firstKey = Object.keys(labelTypesData)[0];
                     select.value = firstKey;
-                    loadLabelTypePreview(firstKey);
+                    loadSingleLabelPreviewForType(firstKey);
                 }
+
+                // Add event listener for the page preview button
+                document.getElementById('openPagePreviewBtn').addEventListener('click', openPagePreviewModal);
             }
         },
         error: function(error) {
@@ -327,58 +380,145 @@ function loadLabelTypes() {
     });
 }
 
-function loadLabelTypePreview(labelTypeName) {
-    console.log('Loading label type preview for:', labelTypeName);
+function loadSingleLabelPreviewForType(labelTypeName) {
+    console.log('Loading single label preview for type:', labelTypeName);
 
     if (!labelTypeName) {
         console.error('No label type name provided');
         return;
     }
 
-    const previewSection = document.getElementById('labelTypePreview');
-    const previewImage = document.getElementById('labelTypePreviewImage');
+    var previewSection = document.getElementById('singleLabelPreviewSection');
+    var previewContainer = document.getElementById('singleLabelPreview');
 
     // Show preview section with loading state
     previewSection.style.display = 'block';
-    previewImage.classList.add('loading');
-    previewImage.alt = 'Loading preview...';
+    previewContainer.classList.add('loading');
+    previewContainer.innerHTML = '<div class="text-muted">Loading...</div>';
 
+    // Get sample data from label type configuration
+    var labelConfig = labelTypesData[labelTypeName] || {};
+    var sampleSku = (labelConfig && labelConfig.sku_sample) ? labelConfig.sku_sample : 'SAM-PLE-SKU';
+    var sampleProduct = (labelConfig && labelConfig.product_name_sample) ? labelConfig.product_name_sample : 'Sample Product Name';
+    var samplePrice = (labelConfig && labelConfig.price_sample) ? labelConfig.price_sample : 29.99;
+
+    frappe.call({
+        method: 'label_creator.api.labels.preview_single_label',
+        args: {
+            label_type: labelTypeName,
+            sku: sampleSku,
+            product_name: sampleProduct,
+            price: String(samplePrice)
+        },
+        callback: function(response) {
+            console.log('Single label preview response:', response);
+
+            previewContainer.classList.remove('loading');
+
+            if (response.message && response.message.success) {
+                if (response.message.image_type === 'png' && response.message.image_data) {
+                    var img = document.createElement('img');
+                    img.src = 'data:image/png;base64,' + response.message.image_data;
+                    img.alt = 'Label Preview';
+                    previewContainer.innerHTML = '';
+                    previewContainer.appendChild(img);
+                    console.log('Loaded PNG preview for single label');
+                } else if (response.message.pdf_data) {
+                    // PDF can't be displayed in img tag - show placeholder with message
+                    previewContainer.innerHTML = '<div class="text-muted" style="font-size: 12px;"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-file-earmark-pdf mb-2" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/><path d="M4.603 14.087a.81.81 0 0 1-.438-.42c-.195-.388-.13-.776.08-1.102.198-.307.526-.568.897-.787a7.68 7.68 0 0 1 1.482-.645 19.697 19.697 0 0 0 1.062-2.227 7.269 7.269 0 0 1-.43-1.295c-.086-.4-.119-.796-.046-1.136.075-.354.274-.672.65-.823.192-.077.4-.12.602-.077a.7.7 0 0 1 .477.365c.088.164.12.356.127.538.007.188-.012.396-.047.614-.084.51-.27 1.134-.52 1.794a10.954 10.954 0 0 0 .98 1.686 5.753 5.753 0 0 1 1.334.05c.364.066.734.195.96.465.12.144.193.32.2.518.007.192-.047.382-.138.563a1.04 1.04 0 0 1-.354.416.856.856 0 0 1-.51.138c-.331-.014-.654-.196-.933-.417a5.712 5.712 0 0 1-.911-.95 11.651 11.651 0 0 0-1.997.406 11.307 11.307 0 0 1-1.02 1.51c-.292.35-.609.656-.927.787a.793.793 0 0 1-.58.029z"/></svg><br>Preview generated<br><small>(PDF format)</small></div>';
+                    console.log('PDF preview - showing placeholder');
+                } else {
+                    previewContainer.innerHTML = '<div class="text-danger" style="font-size: 12px;">No preview data</div>';
+                }
+            } else {
+                console.error('Single label preview failed:', response.message);
+                var errorMsg = (response.message && response.message.message) ? response.message.message : 'Preview failed';
+                previewContainer.innerHTML = '<div class="text-danger" style="font-size: 12px;">Preview failed</div>';
+                previewContainer.title = errorMsg;
+            }
+        },
+        error: function(error) {
+            console.error('Error loading single label preview:', error);
+            previewContainer.classList.remove('loading');
+            previewContainer.innerHTML = '<div class="text-danger" style="font-size: 12px;">Error loading</div>';
+        }
+    });
+}
+
+function openPagePreviewModal() {
+    const labelTypeName = document.getElementById('labelType').value;
+    if (!labelTypeName) {
+        alert('Please select a label type first');
+        return;
+    }
+
+    const previewContent = document.getElementById('pagePreviewContent');
+    const modalElement = document.getElementById('pagePreviewModal');
+
+    // Show loading state
+    previewContent.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2 text-muted">Generating preview...</p>';
+
+    // Show the modal manually (without Bootstrap JS dependency)
+    modalElement.classList.add('show');
+    modalElement.style.display = 'block';
+    document.body.classList.add('modal-open');
+
+    // Create backdrop
+    let backdrop = document.querySelector('.modal-backdrop');
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+    }
+
+    // Load the full page preview
     frappe.call({
         method: 'label_creator.api.labels.preview_label',
         args: {
             label_type_name: labelTypeName
         },
         callback: function(response) {
-            console.log('Label type preview response:', response);
-
-            previewImage.classList.remove('loading');
+            console.log('Page preview response:', response);
 
             if (response.message && response.message.success) {
-                if (response.message.image_type === 'png') {
-                    previewImage.src = 'data:image/png;base64,' + response.message.image_data;
-                    console.log('Loaded PNG preview');
+                if (response.message.image_type === 'png' && response.message.image_data) {
+                    var img = document.createElement('img');
+                    img.src = 'data:image/png;base64,' + response.message.image_data;
+                    img.alt = 'Sample Page Preview';
+                    img.style.maxWidth = '100%';
+                    previewContent.innerHTML = '';
+                    previewContent.appendChild(img);
+                    console.log('Loaded PNG page preview');
                 } else if (response.message.pdf_data) {
-                    previewImage.src = 'data:application/pdf;base64,' + response.message.pdf_data;
-                    console.log('Loaded PDF preview');
+                    // For PDF, use an embed element
+                    previewContent.innerHTML = '<embed src="data:application/pdf;base64,' + response.message.pdf_data + '" type="application/pdf" width="100%" height="500px" /><p class="mt-2 text-muted"><small>If the preview does not display, your browser may not support inline PDF viewing.</small></p>';
+                    console.log('Loaded PDF page preview');
+                } else {
+                    previewContent.innerHTML = '<div class="error-state">No preview data available</div>';
                 }
-                previewImage.alt = 'Label Preview';
             } else {
-                console.error('Label type preview failed:', response.message);
-                const errorMsg = response.message?.message || response.message || 'Unknown error';
-                console.error('Error details:', errorMsg);
-                if (response.message?.traceback) {
-                    console.error('Traceback:', response.message.traceback);
-                }
-                previewImage.alt = 'Preview failed';
-                previewImage.title = errorMsg;
+                var errorMsg = (response.message && response.message.message) ? response.message.message : 'Unknown error';
+                previewContent.innerHTML = '<div class="error-state">Failed to generate preview: ' + errorMsg + '</div>';
+                console.error('Page preview failed:', errorMsg);
             }
         },
         error: function(error) {
-            console.error('Error loading label type preview:', error);
-            previewImage.classList.remove('loading');
-            previewImage.alt = 'Error loading preview';
+            console.error('Error loading page preview:', error);
+            previewContent.innerHTML = '<div class="error-state">Error loading preview. Please try again.</div>';
         }
     });
+}
+
+function closePagePreviewModal() {
+    var modalElement = document.getElementById('pagePreviewModal');
+    modalElement.classList.remove('show');
+    modalElement.style.display = 'none';
+    document.body.classList.remove('modal-open');
+
+    var backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) {
+        backdrop.remove();
+    }
 }
 
 // File input handling
@@ -483,55 +623,58 @@ function displayPreview(content, totalLabels) {
     document.getElementById('errorSection').style.display = 'none';
     document.getElementById('totalLabels').textContent = totalLabels;
 
-    const tbody = document.getElementById('previewTableBody');
+    var tbody = document.getElementById('previewTableBody');
     tbody.innerHTML = '';
 
-    content.forEach((item, index) => {
-        const tr = document.createElement('tr');
-        tr.setAttribute('data-index', index);
+    for (var i = 0; i < content.length; i++) {
+        var item = content[i];
+        var index = i;
+
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-index', String(index));
 
         // Checkbox cell
-        const cbCell = document.createElement('td');
-        const checkbox = document.createElement('input');
+        var cbCell = document.createElement('td');
+        var checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'item-checkbox';
-        checkbox.setAttribute('data-index', index);
+        checkbox.setAttribute('data-index', String(index));
         checkbox.checked = true;
         cbCell.appendChild(checkbox);
         tr.appendChild(cbCell);
 
         // Preview cell
-        const previewCell = document.createElement('td');
+        var previewCell = document.createElement('td');
         previewCell.className = 'label-preview-cell';
-        previewCell.setAttribute('data-index', index);
+        previewCell.setAttribute('data-index', String(index));
         previewCell.innerHTML = '<div class="text-muted" style="font-size: 12px;">Loading...</div>';
         tr.appendChild(previewCell);
 
         // SKU cell
-        const skuCell = document.createElement('td');
+        var skuCell = document.createElement('td');
         skuCell.textContent = item.sku;
         tr.appendChild(skuCell);
 
         // Product cell
-        const productCell = document.createElement('td');
+        var productCell = document.createElement('td');
         productCell.textContent = item.product;
         tr.appendChild(productCell);
 
         // Price cell
-        const priceCell = document.createElement('td');
-        const priceGroup = document.createElement('div');
+        var priceCell = document.createElement('td');
+        var priceGroup = document.createElement('div');
         priceGroup.className = 'input-group input-group-sm';
 
-        const dollarSign = document.createElement('span');
+        var dollarSign = document.createElement('span');
         dollarSign.className = 'input-group-text';
         dollarSign.textContent = '$';
 
-        const priceInput = document.createElement('input');
+        var priceInput = document.createElement('input');
         priceInput.type = 'number';
         priceInput.className = 'form-control price-input';
-        priceInput.setAttribute('data-index', index);
+        priceInput.setAttribute('data-index', String(index));
         priceInput.value = parseFloat(item.display_price).toFixed(2);
-        priceInput.step = '0.01';
+        priceInput.step = '0.05';
         priceInput.min = '0';
         priceInput.style.maxWidth = '100px';
 
@@ -541,11 +684,11 @@ function displayPreview(content, totalLabels) {
         tr.appendChild(priceCell);
 
         // Quantity cell
-        const qtyCell = document.createElement('td');
-        const qtyInput = document.createElement('input');
+        var qtyCell = document.createElement('td');
+        var qtyInput = document.createElement('input');
         qtyInput.type = 'number';
         qtyInput.className = 'form-control form-control-sm quantity-input';
-        qtyInput.setAttribute('data-index', index);
+        qtyInput.setAttribute('data-index', String(index));
         qtyInput.value = item.quantity;
         qtyInput.min = '1';
         qtyInput.style.maxWidth = '80px';
@@ -553,39 +696,43 @@ function displayPreview(content, totalLabels) {
         tr.appendChild(qtyCell);
 
         tbody.appendChild(tr);
-    });
+    }
 
     // Update total when checkboxes or quantities change
     updateTotalLabels();
 
-    // Add event listeners
-    document.querySelectorAll('.item-checkbox').forEach(cb => {
-        cb.addEventListener('change', updateTotalLabels);
-    });
+    // Add event listeners for checkboxes
+    var checkboxes = document.querySelectorAll('.item-checkbox');
+    for (var j = 0; j < checkboxes.length; j++) {
+        checkboxes[j].addEventListener('change', updateTotalLabels);
+    }
 
-    document.querySelectorAll('.quantity-input').forEach(input => {
-        input.addEventListener('input', updateTotalLabels);
-    });
+    // Add event listeners for quantity inputs
+    var qtyInputs = document.querySelectorAll('.quantity-input');
+    for (var k = 0; k < qtyInputs.length; k++) {
+        qtyInputs[k].addEventListener('input', updateTotalLabels);
+    }
 
     // Add event listeners to price inputs to refresh preview when price changes
-    document.querySelectorAll('.price-input').forEach(input => {
-        input.addEventListener('change', function() {
-            const index = this.getAttribute('data-index');
-            const item = processedContent[index];
-            if (item) {
-                const productNameElement = document.querySelectorAll('td')[index * 6 + 3]; // Adjust based on column count
-                loadSingleLabelPreview(index, item.sku, item.product, this.value);
+    var priceInputs = document.querySelectorAll('.price-input');
+    for (var m = 0; m < priceInputs.length; m++) {
+        priceInputs[m].addEventListener('change', function() {
+            var idx = this.getAttribute('data-index');
+            var itm = processedContent[idx];
+            if (itm) {
+                loadSingleLabelPreview(idx, itm.sku, itm.product, this.value);
             }
         });
-    });
+    }
 
     // Select/deselect all checkbox
-    const selectAllCheckbox = document.getElementById('selectAll');
+    var selectAllCheckbox = document.getElementById('selectAll');
     selectAllCheckbox.checked = true;
     selectAllCheckbox.addEventListener('change', function() {
-        document.querySelectorAll('.item-checkbox').forEach(cb => {
-            cb.checked = this.checked;
-        });
+        var cbs = document.querySelectorAll('.item-checkbox');
+        for (var n = 0; n < cbs.length; n++) {
+            cbs[n].checked = this.checked;
+        }
         updateTotalLabels();
     });
 
@@ -597,13 +744,18 @@ function displayPreview(content, totalLabels) {
 }
 
 function loadSingleLabelPreview(index, sku, productName, price) {
-    const labelType = document.getElementById('labelType').value;
+    var labelType = document.getElementById('labelType').value;
     if (!labelType) {
         console.warn('No label type selected');
         return;
     }
 
-    console.log(`Loading preview for index ${index}: ${sku}, ${productName}, $${price}`);
+    console.log('Loading preview for index ' + index + ': ' + sku + ', ' + productName + ', $' + price);
+
+    var previewCell = document.querySelector('.label-preview-cell[data-index="' + index + '"]');
+    if (previewCell) {
+        previewCell.innerHTML = '<div class="text-muted" style="font-size: 12px;">Loading...</div>';
+    }
 
     frappe.call({
         method: 'label_creator.api.labels.preview_single_label',
@@ -611,58 +763,59 @@ function loadSingleLabelPreview(index, sku, productName, price) {
             label_type: labelType,
             sku: sku,
             product_name: productName,
-            price: price
+            price: String(price)
         },
         callback: function(response) {
-            console.log(`Preview response for index ${index}:`, response);
+            console.log('Preview response for index ' + index + ':', response);
+
+            var cell = document.querySelector('.label-preview-cell[data-index="' + index + '"]');
+            if (!cell) {
+                console.warn('Preview cell not found for index ' + index);
+                return;
+            }
 
             if (response.message && response.message.success) {
-                const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
-                if (previewCell) {
-                    const img = document.createElement('img');
+                if (response.message.image_type === 'png' && response.message.image_data) {
+                    var img = document.createElement('img');
                     img.style.maxWidth = '80px';
                     img.style.maxHeight = '80px';
                     img.style.border = '1px solid #ddd';
                     img.style.borderRadius = '4px';
                     img.alt = 'Label Preview';
+                    img.src = 'data:image/png;base64,' + response.message.image_data;
 
-                    if (response.message.image_type === 'png') {
-                        img.src = 'data:image/png;base64,' + response.message.image_data;
-                    } else if (response.message.pdf_data) {
-                        img.src = 'data:application/pdf;base64,' + response.message.pdf_data;
-                    }
-
-                    previewCell.innerHTML = '';
-                    previewCell.appendChild(img);
-                    console.log(`Preview loaded successfully for index ${index}`);
+                    cell.innerHTML = '';
+                    cell.appendChild(img);
+                    console.log('Preview loaded successfully for index ' + index);
+                } else if (response.message.pdf_data) {
+                    // PDF can't be displayed in img tag - show a small placeholder
+                    cell.innerHTML = '<div class="text-muted" style="font-size: 10px;" title="PDF preview generated"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg><br>OK</div>';
+                    console.log('PDF preview for index ' + index + ' - showing placeholder');
+                } else {
+                    cell.innerHTML = '<div class="text-warning" style="font-size: 11px;">No data</div>';
                 }
             } else {
-                console.error(`Preview failed for index ${index}:`, response.message);
-                if (response.message?.traceback) {
+                console.error('Preview failed for index ' + index + ':', response.message);
+                if (response.message && response.message.traceback) {
                     console.error('Traceback:', response.message.traceback);
                 }
-                const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
-                if (previewCell) {
-                    previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;">Error</div>';
-                    const errorMsg = response.message?.message || response.message || 'Unknown error';
-                    previewCell.title = errorMsg;
-                    console.error(`Full error for row ${index}:`, errorMsg);
-                }
+                var errorMsg = (response.message && response.message.message) ? response.message.message : 'Unknown error';
+                cell.innerHTML = '<div class="text-danger" style="font-size: 11px;" title="' + String(errorMsg).replace(/"/g, '&quot;') + '">Error</div>';
+                console.error('Full error for row ' + index + ':', errorMsg);
             }
         },
         error: function(error) {
             console.error('Error loading single label preview:', error);
-            const previewCell = document.querySelector(`.label-preview-cell[data-index="${index}"]`);
-            if (previewCell) {
-                previewCell.innerHTML = '<div class="text-danger" style="font-size: 11px;">Error</div>';
-                previewCell.title = error.message || 'Network error';
+            var cell = document.querySelector('.label-preview-cell[data-index="' + index + '"]');
+            if (cell) {
+                cell.innerHTML = '<div class="text-danger" style="font-size: 11px;" title="' + (error.message || 'Network error').replace(/"/g, '&quot;') + '">Error</div>';
             }
         }
     });
 }
 
 function refreshRowPreviews() {
-    const labelType = document.getElementById('labelType').value;
+    var labelType = document.getElementById('labelType').value;
     if (!labelType) {
         console.log('No label type selected, skipping row previews');
         return;
@@ -673,39 +826,42 @@ function refreshRowPreviews() {
         return;
     }
 
-    console.log(`Refreshing ${processedContent.length} row previews with label type: ${labelType}`);
+    console.log('Refreshing ' + processedContent.length + ' row previews with label type: ' + labelType);
 
-    processedContent.forEach((item, index) => {
+    processedContent.forEach(function(item, index) {
         // Validate that item has required properties
         if (!item || typeof item !== 'object') {
-            console.error(`Invalid item at index ${index}:`, item);
+            console.error('Invalid item at index ' + index + ':', item);
             return;
         }
 
         if (!item.sku || !item.product) {
-            console.error(`Missing sku or product at index ${index}:`, item);
+            console.error('Missing sku or product at index ' + index + ':', item);
             return;
         }
 
-        const priceInput = document.querySelector(`.price-input[data-index="${index}"]`);
-        const price = priceInput ? priceInput.value : item.display_price;
+        var priceInput = document.querySelector('.price-input[data-index="' + index + '"]');
+        var price = priceInput ? priceInput.value : item.display_price;
         loadSingleLabelPreview(index, item.sku, item.product, price);
     });
 }
 
 function updateTotalLabels() {
-    let total = 0;
-    document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
-        const index = cb.getAttribute('data-index');
-        const quantityInput = document.querySelector('.quantity-input[data-index="' + index + '"]');
-        total += parseInt(quantityInput.value) || 0;
-    });
+    var total = 0;
+    var checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+    for (var i = 0; i < checkedBoxes.length; i++) {
+        var idx = checkedBoxes[i].getAttribute('data-index');
+        var quantityInput = document.querySelector('.quantity-input[data-index="' + idx + '"]');
+        if (quantityInput) {
+            total += parseInt(quantityInput.value) || 0;
+        }
+    }
     document.getElementById('totalLabels').textContent = total;
 }
 
 // Generate labels
 document.getElementById('generateBtn').addEventListener('click', function() {
-    const labelType = document.getElementById('labelType').value;
+    var labelType = document.getElementById('labelType').value;
 
     if (!labelType) {
         alert('Please select a label type');
@@ -713,14 +869,17 @@ document.getElementById('generateBtn').addEventListener('click', function() {
     }
 
     // Get selected items with updated prices and quantities
-    const selectedItems = [];
-    document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
-        const index = cb.getAttribute('data-index');
-        const priceInput = document.querySelector('.price-input[data-index="' + index + '"]');
-        const quantityInput = document.querySelector('.quantity-input[data-index="' + index + '"]');
+    var selectedItems = [];
+    var checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+    for (var i = 0; i < checkedBoxes.length; i++) {
+        var idx = checkedBoxes[i].getAttribute('data-index');
+        var priceInput = document.querySelector('.price-input[data-index="' + idx + '"]');
+        var quantityInput = document.querySelector('.quantity-input[data-index="' + idx + '"]');
 
-        const item = {
-            ...processedContent[index],
+        var originalItem = processedContent[idx];
+        var item = {
+            sku: originalItem.sku,
+            product: originalItem.product,
             display_price: parseFloat(priceInput.value).toFixed(2),
             quantity: parseInt(quantityInput.value) || 0
         };
@@ -728,7 +887,7 @@ document.getElementById('generateBtn').addEventListener('click', function() {
         if (item.quantity > 0) {
             selectedItems.push(item);
         }
-    });
+    }
 
     if (selectedItems.length === 0) {
         alert('Please select at least one item to print');
@@ -748,7 +907,7 @@ document.getElementById('generateBtn').addEventListener('click', function() {
 
             if (response.message && response.message.success) {
                 // Setup download link
-                const downloadLink = document.getElementById('downloadLink');
+                var downloadLink = document.getElementById('downloadLink');
                 downloadLink.href = response.message.file_url;
                 downloadLink.download = response.message.filename || 'labels.pdf';
 
@@ -762,7 +921,8 @@ document.getElementById('generateBtn').addEventListener('click', function() {
                 // Scroll to success section
                 document.getElementById('successSection').scrollIntoView({ behavior: 'smooth' });
             } else {
-                alert('Error generating labels: ' + (response.message?.message || 'Unknown error'));
+                var errorMsg = (response.message && response.message.message) ? response.message.message : 'Unknown error';
+                alert('Error generating labels: ' + errorMsg);
             }
         },
         error: function(error) {
