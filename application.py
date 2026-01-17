@@ -2,9 +2,11 @@ import os
 import csv
 import re
 import html
+import logging
 import qrcode
 import json  # Import for safer JSON handling
 from flask import Flask, request, jsonify, send_file, render_template
+from werkzeug.utils import secure_filename
 from docx import Document
 from docx.shared import Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -18,6 +20,10 @@ from reportlab.lib.utils import ImageReader
 from datetime import datetime
 
 app = Flask(__name__)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Folder paths for file uploads, PDF outputs, and QR codes
 UPLOAD_FOLDER = "uploads"
@@ -53,7 +59,7 @@ def load_label_dimensions(json_path):
                 raise KeyError(f"Missing required keys in label definition for {label_id}: {details}")
 
             # Debugging logs for dimensions
-            print(f"Processing label {label_id}: {details}")
+            logger.debug(f"Processing label {label_id}: {details}")
 
         return data
 
@@ -90,10 +96,10 @@ def validate_json(json_string):
     """
     try:
         data = json.loads(json_string)
-        print("Valid JSON Structure:", data)
+        logger.debug("Valid JSON Structure: %s", data)
         return data
     except json.JSONDecodeError as e:
-        print("Invalid JSON Format:", str(e))
+        logger.warning("Invalid JSON Format: %s", str(e))
         raise ValueError(f"Invalid JSON: {str(e)}")
     
 def sanitize_text(text):
@@ -326,7 +332,13 @@ def upload_and_process():
             invalid_files.append({"file": file.filename, "reason": "Not a CSV file"})
             continue
 
-        upload_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        # Sanitize filename to prevent path traversal attacks
+        safe_filename = secure_filename(file.filename)
+        if not safe_filename:
+            invalid_files.append({"file": file.filename, "reason": "Invalid filename"})
+            continue
+
+        upload_path = os.path.join(UPLOAD_FOLDER, safe_filename)
         file.save(upload_path)
 
         try:
@@ -358,6 +370,7 @@ def upload_and_process():
                                     "quantity": 0
                                 }
                             aggregated_content[sku]["quantity"] += quantity
+                            total_labels += quantity
 
                         except ValueError as e:
                             invalid_files.append({"file": file.filename, "reason": f"Invalid quantity value in row: {row}"})
@@ -373,12 +386,14 @@ def upload_and_process():
                     for row in reader:
                         try:
                             sku = row[header_map['sku']]
-                            product_name = sanitize_text(" ".join([
-                                row[header_map['name']],
-                                row[header_map.get('variant_option_one_value', "")],
-                                row[header_map.get('variant_option_two_value', "")],
-                                row[header_map.get('variant_option_three_value', "")]
-                            ]).strip())
+                            # Build product name from name and variant columns (if they exist)
+                            name_parts = [row[header_map['name']]]
+                            for variant_col in ['variant_option_one_value', 'variant_option_two_value', 'variant_option_three_value']:
+                                if variant_col in header_map:
+                                    col_idx = header_map[variant_col]
+                                    if col_idx < len(row) and row[col_idx]:
+                                        name_parts.append(row[col_idx])
+                            product_name = sanitize_text(" ".join(name_parts).strip())
                             display_price = "{:.2f}".format(float(row[header_map['retail_price']]))
                             quantity = sum(
                                 int(row[header_map[col]]) for col in inventory_columns if row[header_map[col]].isdigit()
@@ -439,10 +454,12 @@ def generate_labels():
 
         # Generate output based on format
         if output_format == "pdf":
-            pdf_path = create_labels_pdf( processed_content, label_type)
+            pdf_path = create_labels_pdf(processed_content, label_type)
             return send_file(pdf_path, as_attachment=True)
         elif output_format == "word":
-            word_path = create_labels_word( processed_content, label_type, config)
+            # Generate a file code based on current timestamp
+            file_code = datetime.now().strftime('%Y%m%d_%H%M%S')
+            word_path = create_labels_word(file_code, processed_content, label_type, config)
             return send_file(word_path, as_attachment=True)
         else:
             return jsonify({"message": "Unsupported output format"}), 400
@@ -575,4 +592,6 @@ def home():
     return render_template('index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Use environment variable for debug mode (defaults to False for production safety)
+    debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ('true', '1', 'yes')
+    app.run(debug=debug_mode)
