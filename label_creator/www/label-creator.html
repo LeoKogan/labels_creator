@@ -49,7 +49,7 @@
                     <h5 class="card-title">Label Preview</h5>
                     <p>Total Labels: <strong id="totalLabels">0</strong></p>
 
-                    <div class="row mb-3 align-items-start">
+                    <div class="row mb-3 align-items-end">
                         <div class="col-md-4">
                             <label for="labelType" class="form-label">Label Type</label>
                             <select id="labelType" class="form-select">
@@ -57,24 +57,36 @@
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <!-- Label Type Preview - shown next to selector -->
-                            <div id="labelTypePreview" style="display: none;">
-                                <label class="form-label">Sample Label Preview</label>
-                                <div class="text-center" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px; background-color: #f8f9fa;">
-                                    <img id="labelTypePreviewImage" src="" alt="Label Preview" style="max-width: 100%; max-height: 200px; object-fit: contain;">
-                                </div>
-                            </div>
+                            <button id="openSamplePreviewBtn" class="btn btn-outline-primary">
+                                Open Sample Preview
+                            </button>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                            <div>
-                                <button id="generateBtn" class="btn btn-success me-2">
-                                    Generate Labels (PDF)
-                                </button>
-                                <button id="startOverBtn" class="btn btn-secondary">
-                                    Start Over
-                                </button>
-                            </div>
+                    </div>
+
+                    <!-- Single Label Preview Section -->
+                    <div id="labelTypePreview" class="mb-3" style="display: none;">
+                        <h6 class="mb-2">Single label preview</h6>
+                        <div class="text-center" style="border: 1px solid #ddd; border-radius: 4px; padding: 10px; background-color: #f8f9fa; max-width: 300px;">
+                            <img id="labelTypePreviewImage" src="" alt="Label Preview" style="max-width: 100%; max-height: 200px; object-fit: contain;">
                         </div>
+                        <div class="mt-3">
+                            <button id="generateBtn" class="btn btn-success me-2">
+                                Generate Labels (PDF)
+                            </button>
+                            <button id="startOverBtn" class="btn btn-secondary">
+                                Start Over
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Buttons shown when preview is hidden -->
+                    <div id="buttonsWithoutPreview" class="mb-3">
+                        <button id="generateBtnAlt" class="btn btn-success me-2">
+                            Generate Labels (PDF)
+                        </button>
+                        <button id="startOverBtnAlt" class="btn btn-secondary">
+                            Start Over
+                        </button>
                     </div>
 
                     <div class="table-responsive">
@@ -151,7 +163,7 @@
     <footer class="mt-5 pt-4 border-top">
         <div class="row">
             <div class="col-md-12 text-center text-muted">
-                <small>Label Creator v2.5.4 | Last Updated: 2026-01-05 02:45 UTC | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
+                <small>Label Creator v2.5.4 | Last Updated: 2026-01-05 02:45 UTC</small>
             </div>
         </div>
     </footer>
@@ -299,24 +311,26 @@ function loadLabelTypes() {
                     select.appendChild(option);
                 }
 
-                // Add event listener to show preview when label type changes
+                // Add event listener for label type changes
                 select.addEventListener('change', function() {
                     if (this.value) {
-                        loadLabelTypePreview(this.value);
+                        // Hide the sample preview when type changes (user must click button again)
+                        document.getElementById('labelTypePreview').style.display = 'none';
+                        document.getElementById('buttonsWithoutPreview').style.display = 'block';
                         // Refresh row previews if data is loaded
                         if (processedContent.length > 0) {
                             refreshRowPreviews();
                         }
                     } else {
                         document.getElementById('labelTypePreview').style.display = 'none';
+                        document.getElementById('buttonsWithoutPreview').style.display = 'block';
                     }
                 });
 
-                // Load preview for first option if available
+                // Set first option as default (but don't auto-load preview)
                 if (Object.keys(labelTypesData).length > 0) {
                     const firstKey = Object.keys(labelTypesData)[0];
                     select.value = firstKey;
-                    loadLabelTypePreview(firstKey);
                 }
             }
         },
@@ -703,8 +717,8 @@ function updateTotalLabels() {
     document.getElementById('totalLabels').textContent = total;
 }
 
-// Generate labels
-document.getElementById('generateBtn').addEventListener('click', function() {
+// Generate labels function
+function generateLabels() {
     const labelType = document.getElementById('labelType').value;
 
     if (!labelType) {
@@ -771,11 +785,36 @@ document.getElementById('generateBtn').addEventListener('click', function() {
             alert('Error generating labels');
         }
     });
-});
+}
 
-// Start over
+// Generate labels - both buttons use the same function
+document.getElementById('generateBtn').addEventListener('click', generateLabels);
+document.getElementById('generateBtnAlt').addEventListener('click', generateLabels);
+
+// Start over - both buttons
 document.getElementById('startOverBtn').addEventListener('click', function() {
     location.reload();
+});
+
+document.getElementById('startOverBtnAlt').addEventListener('click', function() {
+    location.reload();
+});
+
+// Open Sample Preview button
+document.getElementById('openSamplePreviewBtn').addEventListener('click', function() {
+    const labelType = document.getElementById('labelType').value;
+    if (!labelType) {
+        alert('Please select a label type first');
+        return;
+    }
+
+    // Show the preview section
+    document.getElementById('labelTypePreview').style.display = 'block';
+    // Hide the alternate buttons
+    document.getElementById('buttonsWithoutPreview').style.display = 'none';
+
+    // Load the preview
+    loadLabelTypePreview(labelType);
 });
 
 // Generate another
