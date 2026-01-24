@@ -185,7 +185,7 @@
     <footer class="mt-5 pt-4 border-top">
         <div class="row">
             <div class="col-md-12 text-center text-muted">
-                <small>Label Creator v2.6.0 | Last Updated: 2026-01-09 | Barcode Support: QR Code, Code 39, Code 128, EAN-13, EAN-8, UPC-A</small>
+                <small>Label Creator v2.6.0 | Last Updated: 2026-01-24</small>
             </div>
         </div>
     </footer>
@@ -280,6 +280,17 @@
 #pagePreviewContent .error-state {
     color: #dc3545;
     padding: 20px;
+}
+
+/* Hide the "Get Updates" newsletter box from footer */
+.footer-subscribe,
+.newsletter-subscribe,
+.web-footer .footer-subscribe-section,
+footer .subscribe-footer,
+.footer-powered + div,
+.web-footer form,
+[data-section="newsletter"] {
+    display: none !important;
 }
 </style>
 {% endblock %}
