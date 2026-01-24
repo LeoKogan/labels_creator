@@ -54,7 +54,7 @@
    "color": "Blue",
    "format": "{}",
    "label": "Label Creator",
-   "link_to": "/label-creator",
+   "url": "/label-creator",
    "type": "URL"
   }
  ],

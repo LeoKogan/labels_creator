@@ -21,15 +21,15 @@ website_route_rules = [
     {"from_route": "/label-creator", "to_route": "label-creator"},
 ]
 
-# Portal menu items
-portal_menu_items = [
-    {
-        "title": "Labels",
-        "route": "/label-creator",
-        "reference_doctype": "",
-        "role": "All"
-    }
-]
+# Portal menu items - Removed to keep Label Creator only in sidebar menu
+# portal_menu_items = [
+#     {
+#         "title": "Labels",
+#         "route": "/label-creator",
+#         "reference_doctype": "",
+#         "role": "All"
+#     }
+# ]
 
 # Includes in <head>
 # ------------------
