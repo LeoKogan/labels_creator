@@ -13,7 +13,19 @@
         </div>
     </div>
 
-    <div class="row mt-4">
+    <div class="row mt-2 mb-3">
+        <div class="col-md-12">
+            <a href="#" id="downloadTemplateLink" class="text-primary" style="text-decoration: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download me-1" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                </svg>
+                Download Template File
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
@@ -306,6 +318,40 @@ function escapeHtml(text) {
     div.textContent = String(text);
     return div.innerHTML;
 }
+
+// Function to download CSV template file
+function downloadTemplateCSV() {
+    // CSV header and sample data rows
+    var csvContent = 'product,sku,quantity,display_price\n';
+    csvContent += 'Widget Pro 2000,WGT-PRO-2000,10,29.99\n';
+    csvContent += 'Super Gadget XL,SGT-XL-001,5,49.99\n';
+    csvContent += 'Mini Tool Kit,MTK-BASIC-100,25,14.99\n';
+    csvContent += 'Premium Cable 6ft,CBL-PRM-6FT,50,9.99\n';
+    csvContent += 'Deluxe Case Black,CSE-DLX-BLK,15,19.99\n';
+
+    // Create blob and trigger download
+    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    var url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'label_template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// Add click handler for template download link
+document.addEventListener('DOMContentLoaded', function() {
+    var templateLink = document.getElementById('downloadTemplateLink');
+    if (templateLink) {
+        templateLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            downloadTemplateCSV();
+        });
+    }
+});
 
 // Ensure frappe is available
 if (typeof frappe === 'undefined') {
