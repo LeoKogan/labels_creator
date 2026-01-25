@@ -48,6 +48,23 @@ bench build
 bench restart
 ```
 
+6. **Configure Portal Settings** (to allow all users to access Label Creator):
+
+   To make the Label Creator accessible to all portal users, add it to your Portal Settings:
+
+   a. Go to **Setup > Website > Portal Settings** in ERPNext
+
+   b. Scroll down to the **Custom Menu Items** section
+
+   c. Click **Add Row** and enter:
+      - **Title**: `Label Creator`
+      - **Route**: `/label-creator`
+      - **Enabled**: ✓ (checked)
+
+   d. Click **Save**
+
+   This will add a "Label Creator" link in the portal navigation menu, allowing all logged-in users to access the label generation tool.
+
 ## Usage
 
 ### Standalone Mode
