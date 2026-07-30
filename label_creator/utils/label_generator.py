@@ -417,6 +417,8 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config, qr_
       - The SKU (and optionally the product name) is drawn below the QR.
       - The price is drawn near the bottom.
     """
+    sku = (sku or "").upper()
+
     orientation = config.get("label_orientation", "portrait").lower()
 
     # Convert label dimensions from inches to points (1 inch = 72 points)
