@@ -30,6 +30,11 @@ dependencies = [
     "reportlab>=4.0.4",
     "PyMuPDF>=1.23.0",
     "python-barcode>=0.15.1",
+    # frappe pins pypika to this exact commit via a git URL; uv's resolver
+    # requires URL dependencies to be declared directly by the installing
+    # project (not just transitively via frappe), or `bench get-app` fails
+    # with "Package `pypika` was included as a URL dependency."
+    "pypika @ git+https://github.com/frappe/pypika@2c50e6142b2d61d2d243e466fdd5dc03b3d918f2",
 ]
 
 [tool.bench.frappe-dependencies]
