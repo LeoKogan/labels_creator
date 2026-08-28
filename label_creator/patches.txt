@@ -1,5 +1,8 @@
+[pre_model_sync]
 label_creator.patches.create_default_label_types
 label_creator.patches.update_label_types_with_sample_fields
 label_creator.patches.update_qr_code_size_fields
 label_creator.patches.add_barcode_type_to_label_types
+
+[post_model_sync]
 label_creator.patches.create_default_gift_certificate_type
