@@ -26,7 +26,7 @@ class GiftCertificate(Document):
 		if self.amount is not None and self.amount <= 0:
 			frappe.throw(_("Amount must be greater than 0"))
 
-		if self.expiration and self.expiration < frappe.utils.nowdate() and self.status not in (
+		if self.expiration and frappe.utils.getdate(self.expiration) < frappe.utils.getdate() and self.status not in (
 			"Cancelled", "Expired"
 		):
 			frappe.msgprint(
