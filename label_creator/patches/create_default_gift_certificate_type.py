@@ -12,6 +12,7 @@ def execute():
 		"doctype": "Gift Certificate Type",
 		"gift_certificate_type_name": "Standard",
 		"display_name": "Standard Gift Certificate",
+		"page_size": "A6",
 		"card_width_mm": 105,
 		"card_height_mm": 148,
 		"background_color": "#0b574d",

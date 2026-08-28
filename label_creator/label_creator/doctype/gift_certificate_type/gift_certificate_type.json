@@ -13,6 +13,7 @@
   "display_name",
   "card_design_tab",
   "card_size_section",
+  "page_size",
   "card_width_mm",
   "card_height_mm",
   "column_break_size",
@@ -99,18 +100,29 @@
    "label": "Card Size"
   },
   {
+   "fieldname": "page_size",
+   "fieldtype": "Select",
+   "label": "Page Size",
+   "options": "A4\nA5\nA6\nLetter\nLegal\nCustom",
+   "default": "A6",
+   "reqd": 1,
+   "description": "Pick a standard size to fill in Card Width/Height automatically, or choose Custom to set them yourself. Standard sizes are portrait (width < height); for landscape, choose Custom and swap the values."
+  },
+  {
    "fieldname": "card_width_mm",
    "fieldtype": "Float",
    "label": "Card Width (mm)",
    "reqd": 1,
-   "default": "105"
+   "default": "105",
+   "read_only_depends_on": "eval:doc.page_size != 'Custom'"
   },
   {
    "fieldname": "card_height_mm",
    "fieldtype": "Float",
    "label": "Card Height (mm)",
    "reqd": 1,
-   "default": "148"
+   "default": "148",
+   "read_only_depends_on": "eval:doc.page_size != 'Custom'"
   },
   {
    "fieldname": "column_break_size",

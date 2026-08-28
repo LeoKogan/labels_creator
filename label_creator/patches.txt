@@ -6,3 +6,4 @@ label_creator.patches.add_barcode_type_to_label_types
 
 [post_model_sync]
 label_creator.patches.create_default_gift_certificate_type
+label_creator.patches.set_page_size_on_gift_certificate_types
