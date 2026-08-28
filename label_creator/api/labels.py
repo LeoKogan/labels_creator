@@ -75,7 +75,7 @@ def upload_and_process(files_json):
                 for row in reader:
                     row_number += 1
                     try:
-                        sku = row[header_map['sku']].strip()
+                        sku = row[header_map['sku']].strip().upper()
                         product = row[header_map['product']].strip()
                         display_price = "{:.2f}".format(float(row[header_map['display_price']]))
                         quantity = int(row[header_map['quantity']])
@@ -108,7 +108,7 @@ def upload_and_process(files_json):
                 for row in reader:
                     row_number += 1
                     try:
-                        sku = row[header_map['sku']].strip()
+                        sku = row[header_map['sku']].strip().upper()
                         product_name = row[header_map['name']].strip()
                         display_price = "{:.2f}".format(float(row[header_map['retail_price']]))
                         quantity = sum(

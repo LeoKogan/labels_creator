@@ -228,6 +228,8 @@ def draw_label(c, x, y, sku, name, price, label_width, label_height, config):
         label_height (float): Height of the label (in inches).
         config (dict): Configuration for the label type including offsets.
     """
+    sku = (sku or "").upper()
+
     # Convert inches to points
     label_width_pts = label_width * 72
     label_height_pts = label_height * 72
@@ -357,7 +359,7 @@ def upload_and_process():
                     # Process File Type 1
                     for row in reader:
                         try:
-                            sku = row[header_map['sku']]
+                            sku = row[header_map['sku']].strip().upper()
                             product = sanitize_text(row[header_map['product']])
                             display_price = "{:.2f}".format(float(row[header_map['display_price']]))
                             quantity = int(row[header_map['quantity']])
@@ -385,7 +387,7 @@ def upload_and_process():
 
                     for row in reader:
                         try:
-                            sku = row[header_map['sku']]
+                            sku = row[header_map['sku']].strip().upper()
                             # Build product name from name and variant columns (if they exist)
                             name_parts = [row[header_map['name']]]
                             for variant_col in ['variant_option_one_value', 'variant_option_two_value', 'variant_option_three_value']:
