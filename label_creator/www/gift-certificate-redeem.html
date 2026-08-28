@@ -1,0 +1,272 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_content %}
+<style>
+    /* Hide standard Frappe menus, navbars, and footers */
+    header, footer, .navbar, .web-sidebar, .page-breadcrumbs, .footer-powered, #website-post-login {
+        display: none !important;
+    }
+
+    body {
+        background-color: #f4f6f8 !important;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .clean-wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 1.5rem 1rem;
+    }
+
+    .card-box {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        padding: 2.5rem 2rem;
+        width: 100%;
+        max-width: 460px;
+    }
+
+    .brand-logo {
+        max-height: 85px;
+        width: auto;
+        object-fit: contain;
+    }
+
+    .phone-group {
+        display: flex;
+        gap: 8px;
+    }
+
+    .country-code-select {
+        width: 120px;
+        flex-shrink: 0;
+        font-weight: 600;
+    }
+
+    .alert a.mail-link {
+        color: inherit;
+        font-weight: 600;
+        text-decoration: underline;
+    }
+    .alert a.mail-link:hover {
+        opacity: 0.8;
+    }
+</style>
+
+<div class="clean-wrapper">
+    <div class="card-box">
+        <!-- Logo Section -->
+        <div class="text-center mb-4">
+            <img id="dynamic-app-logo" src="https://erp.craftedgoods.ca/files/Crafted%20Logo-HighQuality.jpg" alt="CRAFTED" class="brand-logo mb-2" />
+        </div>
+
+        <!-- Certificate Code Header -->
+        <div class="bg-light text-center p-3 mb-4 rounded-3 border">
+            <span class="text-uppercase text-muted fw-bold small tracking-wide">Gift Certificate</span>
+            <h2 class="display-6 fw-bold text-primary my-1" id="code-display">---</h2>
+            <small class="text-secondary" id="code-subtitle">Verifying code...</small>
+        </div>
+
+        <!-- Guest Form (Hidden until validated) -->
+        <form id="certificate-form" class="d-none">
+            <input type="hidden" id="certificate_code" />
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">First Name *</label>
+                <input type="text" id="first_name" class="form-control form-control-lg" required />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">Last Name *</label>
+                <input type="text" id="last_name" class="form-control form-control-lg" required />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">Email Address *</label>
+                <input type="email" id="email" class="form-control form-control-lg" required />
+            </div>
+
+            <!-- Separate Country Code Dropdown + Phone Input -->
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">Phone Number *</label>
+                <div class="phone-group">
+                    <select id="country_code" class="form-select form-select-lg country-code-select">
+                        <option value="+1" selected>🇨🇦 +1 (CA)</option>
+                        <option value="+1">🇺🇸 +1 (US)</option>
+                        <option value="+44">🇬🇧 +44 (UK)</option>
+                        <option value="+61">🇦🇺 +61 (AU)</option>
+                        <option value="+49">🇩🇪 +49 (DE)</option>
+                        <option value="+33">🇫🇷 +33 (FR)</option>
+                        <option value="+34">🇪🇸 +34 (ES)</option>
+                        <option value="+39">🇮🇹 +39 (IT)</option>
+                        <option value="+54">🇦🇷 +54 (AR)</option>
+                        <option value="+52">🇲🇽 +52 (MX)</option>
+                        <option value="+55">🇧🇷 +55 (BR)</option>
+                    </select>
+                    <input type="tel" id="phone_number" class="form-control form-control-lg" placeholder="7806804228" required />
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100 mt-3" id="submit-btn">Register & Redeem</button>
+        </form>
+
+        <div id="response-msg" class="mt-4 alert d-none"></div>
+    </div>
+</div>
+
+<script>
+(function() {
+    function initRedeemForm() {
+        const formEl = document.getElementById('certificate-form');
+        const codeDisplay = document.getElementById('code-display');
+        const codeSubtitle = document.getElementById('code-subtitle');
+        const hiddenInput = document.getElementById('certificate_code');
+        const logoImg = document.getElementById('dynamic-app-logo');
+        const msg = document.getElementById('response-msg');
+
+        // Read parameter from URL (?code=GC-XXXXX)
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code') || urlParams.get('name') || '';
+
+        if (!code) {
+            codeDisplay.innerText = 'No Code Found';
+            codeDisplay.classList.add('text-danger');
+            codeSubtitle.innerText = 'Please scan a valid QR code link.';
+            return;
+        }
+
+        codeDisplay.innerText = code;
+        hiddenInput.value = code;
+
+        const endpoint = '/api/method/label_creator.api.gift_certificate.register_gift_certificate';
+
+        // Pre-validate code
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ action: 'validate', certificate_code: code })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message && data.message.status === 'success') {
+                if (data.message.app_logo) {
+                    logoImg.src = data.message.app_logo;
+                }
+                codeSubtitle.innerText = 'Enter your details below to redeem';
+                formEl.classList.remove('d-none');
+            } else {
+                let errText = parseErrorMessage(data);
+                codeDisplay.classList.add('text-danger');
+                codeSubtitle.innerText = 'Unable to process certificate';
+                msg.className = 'mt-3 alert alert-danger text-center';
+                msg.innerHTML = formatMailtoLinks(errText);
+                msg.classList.remove('d-none');
+            }
+        })
+        .catch(() => {
+            codeDisplay.classList.add('text-danger');
+            codeSubtitle.innerText = 'Validation failed';
+            msg.className = 'mt-3 alert alert-danger text-center';
+            msg.innerHTML = formatMailtoLinks('Network error during validation. Please contact shop@craftedgoods.ca');
+            msg.classList.remove('d-none');
+        });
+
+        // Handle Form Submission
+        formEl.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('submit-btn');
+
+            // Extract raw digits entered by user
+            const rawPhoneInput = document.getElementById('phone_number').value.replace(/\D/g, '');
+            const countryCode = document.getElementById('country_code').value; // e.g. "+1"
+
+            if (rawPhoneInput.length < 7) {
+                msg.className = 'mt-3 alert alert-danger text-center';
+                msg.innerHTML = 'Please enter a valid phone number.';
+                msg.classList.remove('d-none');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Submitting...';
+            msg.classList.add('d-none');
+
+            // Combine into Frappe-compatible format: +1-7806804228
+            const formattedPhone = `${countryCode}-${rawPhoneInput}`;
+
+            const payload = {
+                action: 'register',
+                certificate_code: hiddenInput.value,
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                email: document.getElementById('email').value,
+                phone_number: formattedPhone
+            };
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerText = 'Register & Redeem';
+
+                if (data.message && data.message.status === 'success') {
+                    msg.className = 'mt-3 alert alert-success text-center';
+                    msg.innerHTML = data.message.message;
+                    formEl.style.display = 'none';
+                    codeSubtitle.innerText = 'Redeemed Successfully';
+                    msg.classList.remove('d-none');
+                } else {
+                    let errText = parseErrorMessage(data);
+                    msg.className = 'mt-3 alert alert-danger text-center';
+                    msg.innerHTML = formatMailtoLinks(errText);
+                    msg.classList.remove('d-none');
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.innerText = 'Register & Redeem';
+                msg.className = 'mt-3 alert alert-danger text-center';
+                msg.innerHTML = formatMailtoLinks('Network error. Please try again or contact shop@craftedgoods.ca');
+                msg.classList.remove('d-none');
+            });
+        });
+    }
+
+    function formatMailtoLinks(text) {
+        if (!text) return '';
+        const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
+        return text.replace(emailRegex, '<a href="mailto:$1" class="mail-link">$1</a>');
+    }
+
+    function parseErrorMessage(data) {
+        if (data._server_messages) {
+            try {
+                return JSON.parse(JSON.parse(data._server_messages)[0]).message;
+            } catch (e) {}
+        } else if (data.exception) {
+            return data.exception.split(':').pop();
+        }
+        return 'Failed to process certificate. Please contact shop@craftedgoods.ca';
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initRedeemForm);
+    } else {
+        initRedeemForm();
+    }
+})();
+</script>
+{% endblock %}

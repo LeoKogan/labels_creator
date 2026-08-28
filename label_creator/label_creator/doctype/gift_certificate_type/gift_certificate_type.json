@@ -58,7 +58,9 @@
   "website_label",
   "website_url",
   "social_label",
-  "social_url"
+  "social_url",
+  "activation_tab",
+  "provider"
  ],
  "fields": [
   {
@@ -379,6 +381,19 @@
    "label": "Social URL",
    "default": "https://instagram.com/crafted.shop",
    "depends_on": "eval:doc.show_footer_links"
+  },
+  {
+   "fieldname": "activation_tab",
+   "fieldtype": "Tab Break",
+   "label": "Activation"
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Activation Provider",
+   "options": "None\nLightspeed",
+   "default": "None",
+   "description": "When set, saving a new Gift Certificate of this type automatically creates a matching gift card with this POS/e-commerce provider. Credentials are read from Custom API Settings (service name must match this value). Choose \"None\" to skip automatic activation."
   }
  ],
  "index_web_pages_for_search": 1,

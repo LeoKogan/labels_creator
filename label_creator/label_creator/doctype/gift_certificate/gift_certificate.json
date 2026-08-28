@@ -1,7 +1,6 @@
 {
  "actions": [],
- "allow_rename": 1,
- "autoname": "GC-.YYYY..MM.-.HASH.",
+ "allow_rename": 0,
  "creation": "2026-08-28 00:00:00.000000",
  "default_print_format": "Gift Certificate",
  "doctype": "DocType",
@@ -46,7 +45,7 @@
    "read_only": 1,
    "unique": 1,
    "in_list_view": 1,
-   "description": "Auto-generated on save if left blank"
+   "description": "Auto-generated on save if left blank. Also used as the document ID, so this cannot be changed afterwards."
   },
   {
    "fieldname": "amount",
@@ -134,7 +133,7 @@
  "modified_by": "Administrator",
  "module": "Label Creator",
  "name": "Gift Certificate",
- "naming_rule": "Expression",
+ "naming_rule": "By script",
  "owner": "Administrator",
  "permissions": [
   {

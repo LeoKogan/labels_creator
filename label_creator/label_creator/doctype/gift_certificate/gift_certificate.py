@@ -1,22 +1,28 @@
 # Copyright (c) 2026, Your Company and contributors
 # For license information, please see license.txt
 
-import secrets
-import string
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
 
-CERTIFICATE_CODE_LENGTH = 12
-CERTIFICATE_CODE_ALPHABET = string.ascii_uppercase + string.digits
+CERTIFICATE_CODE_PREFIX = "GC-"
+CERTIFICATE_CODE_RANDOM_LENGTH = 10
 
 
 class GiftCertificate(Document):
-	def validate(self):
+	def autoname(self):
+		"""
+		The certificate code doubles as the document's primary key, so it's
+		generated here (autoname runs before validate) rather than assigned
+		separately. Mirrors the client-side generator in gift_certificate.js.
+		"""
 		if not self.certificate_code:
-			self.certificate_code = generate_certificate_code()
+			random_hash = frappe.utils.generate_hash(length=CERTIFICATE_CODE_RANDOM_LENGTH).upper()
+			self.certificate_code = f"{CERTIFICATE_CODE_PREFIX}{random_hash}"
 
+		self.name = self.certificate_code
+
+	def validate(self):
 		if self.amount is not None and self.amount <= 0:
 			frappe.throw(_("Amount must be greater than 0"))
 
@@ -28,13 +34,3 @@ class GiftCertificate(Document):
 				indicator="orange",
 				alert=True,
 			)
-
-
-def generate_certificate_code():
-	"""Generate a unique, human-friendly certificate code."""
-	for _attempt in range(10):
-		code = "".join(secrets.choice(CERTIFICATE_CODE_ALPHABET) for _ in range(CERTIFICATE_CODE_LENGTH))
-		if not frappe.db.exists("Gift Certificate", {"certificate_code": code}):
-			return code
-
-	frappe.throw(_("Could not generate a unique certificate code. Please try saving again."))

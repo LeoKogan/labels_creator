@@ -59,6 +59,7 @@ def create_default_gift_certificate_type():
             "website_url": "https://craftedgoods.ca",
             "social_label": "crafted.shop",
             "social_url": "https://instagram.com/crafted.shop",
+            "provider": "Lightspeed",
         })
         doc.insert(ignore_permissions=True)
         frappe.db.commit()
