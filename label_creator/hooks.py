@@ -79,10 +79,12 @@ website_route_rules = [
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-#	"methods": "label_creator.utils.jinja_methods",
-#	"filters": "label_creator.utils.jinja_filters"
-# }
+jinja = {
+	"methods": [
+		"label_creator.utils.gift_certificate.get_gift_certificate_qr",
+		"label_creator.utils.gift_certificate.get_gift_certificate_barcode",
+	]
+}
 
 # Installation
 # ------------
@@ -98,6 +100,12 @@ fixtures = [
 		"dt": "Workspace",
 		"filters": [
 			["name", "=", "Labels"]
+		]
+	},
+	{
+		"dt": "Print Format",
+		"filters": [
+			["name", "=", "Gift Certificate"]
 		]
 	}
 ]
@@ -137,6 +145,10 @@ fixtures = [
 # Document Events
 # ---------------
 # Hook on document methods and events
+
+# Provider activation (e.g. Lightspeed gift card creation) fires when a
+# Gift Certificate is redeemed, not on creation - see
+# label_creator.api.gift_certificate.register_gift_certificate
 
 # doc_events = {
 #	"*": {
