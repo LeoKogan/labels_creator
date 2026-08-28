@@ -19,17 +19,15 @@ function bulk_print_gift_certificates(listview) {
 		return;
 	}
 
-	// Each certificate renders through the Gift Certificate print format,
-	// which reads its own linked Gift Certificate Type (page size, colors,
-	// QR/barcode placement) at render time - so a mixed selection of types
-	// still merges correctly into one PDF, each certificate keeping its own
-	// look. no_letterhead=1 since the print format is a full custom card.
+	// Rendered natively, one page per certificate at its own Gift
+	// Certificate Type's size/design, combined into one PDF - see
+	// utils/gift_certificate_pdf.py. Not Frappe's built-in
+	// download_multi_pdf: that renders through the print/wkhtmltopdf
+	// pipeline, which forces the page size from Print Settings (A4 by
+	// default) regardless of the certificate's own configured size.
 	const params = new URLSearchParams({
-		doctype: 'Gift Certificate',
-		name: JSON.stringify(names),
-		format: 'Gift Certificate',
-		no_letterhead: '1'
+		names: JSON.stringify(names)
 	});
 
-	window.open(`/api/method/frappe.utils.print_format.download_multi_pdf?${params.toString()}`);
+	window.open(`/api/method/label_creator.api.gift_certificate.bulk_print_gift_certificates?${params.toString()}`);
 }
