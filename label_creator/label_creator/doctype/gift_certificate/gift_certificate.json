@@ -1,0 +1,169 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "GC-.YYYY..MM.-.HASH.",
+ "creation": "2026-08-28 00:00:00.000000",
+ "default_print_format": "Gift Certificate",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "gift_certificate_section",
+  "gift_certificate_type",
+  "certificate_code",
+  "amount",
+  "expiration",
+  "status",
+  "organization_name",
+  "redeem_data_section",
+  "first_name",
+  "last_name",
+  "email",
+  "phone_number",
+  "redeem_date",
+  "redeemed_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "gift_certificate_section",
+   "fieldtype": "Section Break",
+   "label": "Gift Certificate"
+  },
+  {
+   "fieldname": "gift_certificate_type",
+   "fieldtype": "Link",
+   "label": "Gift Certificate Type",
+   "options": "Gift Certificate Type",
+   "default": "Standard",
+   "reqd": 1,
+   "description": "Controls the page size, colors, QR/barcode placement and text used when printing this certificate"
+  },
+  {
+   "fieldname": "certificate_code",
+   "fieldtype": "Data",
+   "label": "Certificate Code",
+   "length": 13,
+   "read_only": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "description": "Auto-generated on save if left blank"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "reqd": 1,
+   "non_negative": 1,
+   "in_list_view": 1,
+   "in_filter": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "expiration",
+   "fieldtype": "Date",
+   "label": "Expiration",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Created\nActivated\nLinked\nSuspended\nCancelled\nExpired",
+   "default": "Created",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_filter": 1,
+   "in_standard_filter": 1,
+   "description": "Current lifecycle status of the Gift Certificate.\n\n• Created – Newly created, not yet activated\n• Activated – Successfully created and available for use\n• Linked – Linked to a customer / partially or fully redeemed\n• Suspended – Temporarily disabled (can be reactivated later)\n• Cancelled – Permanently cancelled and no longer valid\n• Expired – Past the expiration date and no longer usable"
+  },
+  {
+   "fieldname": "organization_name",
+   "fieldtype": "Data",
+   "label": "Organization Holder Name",
+   "in_list_view": 1,
+   "in_filter": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "redeem_data_section",
+   "fieldtype": "Section Break",
+   "label": "Redeem Data"
+  },
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "label": "First Name",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "in_global_search": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Phone",
+   "label": "Phone number",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "redeem_date",
+   "fieldtype": "Date",
+   "label": "Redeem date"
+  },
+  {
+   "fieldname": "redeemed_by",
+   "fieldtype": "Link",
+   "label": "Redeemed By",
+   "options": "Customer",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-28 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Label Creator",
+ "name": "Gift Certificate",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Store Sales Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

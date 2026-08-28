@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"TgJElP1bSH\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Label Creator</span>\",\"col\":12}},{\"id\":\"jdZ1234abc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Type\",\"col\":3}},{\"id\":\"xyz9876def\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Creator\",\"col\":3}},{\"id\":\"abc1111ghi\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">Reports & Masters</span>\",\"col\":12}},{\"id\":\"def2222jkl\",\"type\":\"card\",\"data\":{\"card_name\":\"Label Types\",\"col\":4}}]",
+ "content": "[{\"id\":\"TgJElP1bSH\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Label Creator</span>\",\"col\":12}},{\"id\":\"jdZ1234abc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Type\",\"col\":3}},{\"id\":\"xyz9876def\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Creator\",\"col\":3}},{\"id\":\"gc0001abcd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Gift Certificate\",\"col\":3}},{\"id\":\"abc1111ghi\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\">Reports & Masters</span>\",\"col\":12}},{\"id\":\"def2222jkl\",\"type\":\"card\",\"data\":{\"card_name\":\"Label Types\",\"col\":4}}]",
  "creation": "2025-01-14 12:00:00.000000",
  "docstatus": 0,
  "doctype": "Workspace",
@@ -30,6 +30,26 @@
    "link_type": "URL",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gift Certificate",
+   "link_count": 0,
+   "link_to": "Gift Certificate",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Gift Certificate Type",
+   "link_count": 0,
+   "link_to": "Gift Certificate Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
  "modified": "2025-01-14 12:00:00.000000",
@@ -56,6 +76,13 @@
    "label": "Label Creator",
    "url": "/label-creator",
    "type": "URL"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "List",
+   "label": "Gift Certificate",
+   "link_to": "Gift Certificate",
+   "type": "DocType"
   }
  ],
  "title": "Labels"

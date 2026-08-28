@@ -79,10 +79,12 @@ website_route_rules = [
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-#	"methods": "label_creator.utils.jinja_methods",
-#	"filters": "label_creator.utils.jinja_filters"
-# }
+jinja = {
+	"methods": [
+		"label_creator.utils.gift_certificate.get_gift_certificate_qr",
+		"label_creator.utils.gift_certificate.get_gift_certificate_barcode",
+	]
+}
 
 # Installation
 # ------------
@@ -98,6 +100,12 @@ fixtures = [
 		"dt": "Workspace",
 		"filters": [
 			["name", "=", "Labels"]
+		]
+	},
+	{
+		"dt": "Print Format",
+		"filters": [
+			["name", "=", "Gift Certificate"]
 		]
 	}
 ]
