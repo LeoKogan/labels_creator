@@ -46,6 +46,8 @@ def execute():
 		"website_url": "https://craftedgoods.ca",
 		"social_label": "crafted.shop",
 		"social_url": "https://instagram.com/crafted.shop",
+		"social_follow_text": "Follow us!",
+		"social_qr_size_mm": 10,
 		"provider": "Lightspeed",
 	})
 	doc.insert(ignore_permissions=True)

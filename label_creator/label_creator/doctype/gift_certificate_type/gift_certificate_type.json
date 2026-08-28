@@ -60,6 +60,8 @@
   "website_url",
   "social_label",
   "social_url",
+  "social_follow_text",
+  "social_qr_size_mm",
   "activation_tab",
   "provider"
  ],
@@ -392,6 +394,21 @@
    "fieldtype": "Data",
    "label": "Social URL",
    "default": "https://instagram.com/crafted.shop",
+   "depends_on": "eval:doc.show_footer_links",
+   "description": "When set, a small scannable QR code linking here is printed next to the social handle"
+  },
+  {
+   "fieldname": "social_follow_text",
+   "fieldtype": "Data",
+   "label": "Social Follow Text",
+   "default": "Follow us!",
+   "depends_on": "eval:doc.show_footer_links"
+  },
+  {
+   "fieldname": "social_qr_size_mm",
+   "fieldtype": "Float",
+   "label": "Social QR Size (mm)",
+   "default": "10",
    "depends_on": "eval:doc.show_footer_links"
   },
   {
