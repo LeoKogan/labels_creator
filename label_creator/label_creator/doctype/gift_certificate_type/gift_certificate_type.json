@@ -393,7 +393,7 @@
    "label": "Activation Provider",
    "options": "None\nLightspeed",
    "default": "None",
-   "description": "When set, saving a new Gift Certificate of this type automatically creates a matching gift card with this POS/e-commerce provider. Credentials are read from Custom API Settings (service name must match this value). Choose \"None\" to skip automatic activation."
+   "description": "When set, redeeming a Gift Certificate of this type (via the public redemption page) automatically creates a matching gift card with this POS/e-commerce provider. Credentials are read from Custom API Settings (service name must match this value). Choose \"None\" to skip automatic activation."
   }
  ],
  "index_web_pages_for_search": 1,

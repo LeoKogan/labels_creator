@@ -2,6 +2,8 @@ import frappe
 from frappe import _
 from frappe.utils import formatdate, getdate, nowdate, validate_email_address
 
+from label_creator.utils.gift_certificate_providers import activate_gift_certificate
+
 def _not_redeemable_message(status):
 	return {
 		"Cancelled": _("This gift certificate has been cancelled."),
@@ -85,6 +87,10 @@ def _register(gift_certificate, first_name, last_name, email, phone_number):
 	doc.status = "Linked"
 	doc.save(ignore_permissions=True)
 	frappe.db.commit()
+
+	# Create the matching POS gift card (e.g. Lightspeed) now that the
+	# certificate is actually being redeemed, not when it was first created.
+	activate_gift_certificate(doc)
 
 	return {
 		"status": "success",

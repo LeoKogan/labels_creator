@@ -146,11 +146,17 @@ fixtures = [
 # ---------------
 # Hook on document methods and events
 
-doc_events = {
-	"Gift Certificate": {
-		"after_insert": "label_creator.utils.gift_certificate_providers.activate_gift_certificate"
-	}
-}
+# Provider activation (e.g. Lightspeed gift card creation) fires when a
+# Gift Certificate is redeemed, not on creation - see
+# label_creator.api.gift_certificate.register_gift_certificate
+
+# doc_events = {
+#	"*": {
+#		"on_update": "method",
+#		"on_cancel": "method",
+#		"on_trash": "method"
+#	}
+# }
 
 # Scheduled Tasks
 # ---------------

@@ -2,13 +2,18 @@ import frappe
 from frappe import _
 
 
-def activate_gift_certificate(doc, method=None):
+def activate_gift_certificate(doc):
 	"""
-	doc_event handler (Gift Certificate: after_insert). Dispatches to the
-	activation provider configured on the certificate's Gift Certificate
-	Type, if any. Adding a new provider later just means writing another
-	`_activate_<provider>(doc)` function and registering it below - nothing
-	about the Gift Certificate doctype or this hook needs to change.
+	Called when a Gift Certificate is redeemed (see
+	label_creator.api.gift_certificate.register_gift_certificate) -
+	deliberately not on creation, since staff may print and hand out a
+	certificate well before anyone redeems it.
+
+	Dispatches to the activation provider configured on the certificate's
+	Gift Certificate Type, if any. Adding a new provider later just means
+	writing another `_activate_<provider>(doc)` function and registering it
+	below - nothing about the Gift Certificate doctype or the redemption
+	flow needs to change.
 	"""
 	if not doc.gift_certificate_type:
 		return
@@ -79,7 +84,6 @@ def _activate_lightspeed(doc):
 		data = data if isinstance(data, dict) else {}
 		balance = (data.get("data") or {}).get("balance")
 
-		frappe.db.set_value("Gift Certificate", doc.name, "status", "Activated", update_modified=False)
 		frappe.msgprint(
 			_("Gift Card <b>{0}</b> successfully created in Lightspeed (Balance: {1})").format(
 				doc.certificate_code, balance
@@ -91,7 +95,7 @@ def _activate_lightspeed(doc):
 	except Exception as e:
 		frappe.log_error(title="Lightspeed gift card create failed", message=frappe.get_traceback())
 		frappe.msgprint(
-			_("Gift Certificate saved in ERP. Lightspeed create failed: {0}").format(e),
+			_("Gift certificate redeemed in ERP, but Lightspeed gift card creation failed: {0}").format(e),
 			indicator="orange",
 			alert=True,
 		)
