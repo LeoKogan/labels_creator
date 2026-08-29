@@ -30,6 +30,7 @@ dependencies = [
     "reportlab>=4.0.4",
     "PyMuPDF>=1.23.0",
     "python-barcode>=0.15.1",
+    "requests>=2.28.0",
     # frappe pins these to exact commits via git URLs; uv's resolver requires
     # URL dependencies to be declared directly by the installing project (not
     # just transitively via frappe), or `bench get-app` fails with

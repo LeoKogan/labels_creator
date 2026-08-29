@@ -1,8 +1,61 @@
+import json
+
 import frappe
 from frappe import _
-from frappe.utils import formatdate, getdate, nowdate, validate_email_address
+from frappe.utils import formatdate, getdate, now_datetime, nowdate, validate_email_address
 
+from label_creator.utils.gift_certificate_pdf import (
+	generate_bulk_gift_certificate_pdf,
+	generate_gift_certificate_pdf,
+)
 from label_creator.utils.gift_certificate_providers import activate_gift_certificate
+
+
+@frappe.whitelist()
+def print_gift_certificate_pdf(name):
+	"""
+	Render a single Gift Certificate to PDF with our own reportlab-based
+	generator (utils/gift_certificate_pdf.py) instead of Frappe's default
+	print pipeline. Frappe's wkhtmltopdf renderer has weak/inconsistent
+	flexbox support and forces the page size from Print Settings
+	(defaulting to A4) regardless of any @page CSS rule, so the old Jinja
+	Print Format looked correct in the browser preview but broke and
+	printed at the wrong size in the actual PDF - the same reason
+	label_generator.py draws labels natively rather than through print
+	formats.
+	"""
+	doc = frappe.get_doc("Gift Certificate", name)
+	doc.check_permission("print")
+
+	pdf_bytes = generate_gift_certificate_pdf(doc)
+
+	frappe.local.response.filename = f"{doc.name}.pdf"
+	frappe.local.response.filecontent = pdf_bytes
+	frappe.local.response.type = "download"
+
+
+@frappe.whitelist()
+def bulk_print_gift_certificates(names):
+	"""
+	Render multiple Gift Certificates into one combined PDF, each following
+	its own Gift Certificate Type (size, colors, QR/barcode placement).
+	Replaces Frappe's built-in download_multi_pdf for this doctype, for the
+	same reason as print_gift_certificate_pdf above.
+	"""
+	if isinstance(names, str):
+		names = json.loads(names)
+	if not names:
+		frappe.throw(_("Select at least one Gift Certificate to print."))
+
+	for name in names:
+		frappe.get_doc("Gift Certificate", name).check_permission("print")
+
+	pdf_bytes = generate_bulk_gift_certificate_pdf(names)
+
+	frappe.local.response.filename = f"gift-certificates-{now_datetime().strftime('%Y%m%d%H%M%S')}.pdf"
+	frappe.local.response.filecontent = pdf_bytes
+	frappe.local.response.type = "download"
+
 
 def _not_redeemable_message(status):
 	return {

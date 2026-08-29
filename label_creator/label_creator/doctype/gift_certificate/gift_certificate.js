@@ -32,8 +32,11 @@ frappe.ui.form.on('Gift Certificate', {
 
 		if (!frm.is_new()) {
 			frm.add_custom_button(__('Print Certificate'), function() {
-				frappe.route_options = { print_format: 'Gift Certificate' };
-				frm.print_doc();
+				// Rendered natively (utils/gift_certificate_pdf.py), not through
+				// Frappe's print/wkhtmltopdf pipeline - see that module's
+				// docstring for why.
+				const url = `/api/method/label_creator.api.gift_certificate.print_gift_certificate_pdf?name=${encodeURIComponent(frm.doc.name)}`;
+				window.open(url);
 			});
 		}
 	}
