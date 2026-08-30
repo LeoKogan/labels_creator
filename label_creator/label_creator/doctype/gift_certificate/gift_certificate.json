@@ -22,7 +22,8 @@
   "email",
   "phone_number",
   "redeem_date",
-  "redeemed_by"
+  "redeemed_by",
+  "lightspeed_customer_code"
  ],
  "fields": [
   {
@@ -137,6 +138,14 @@
    "label": "Redeemed By",
    "options": "Customer",
    "read_only": 1
+  },
+  {
+   "fieldname": "lightspeed_customer_code",
+   "fieldtype": "Data",
+   "label": "Lightspeed Customer Code",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "Set once the redeemer has been found or created as a customer in Lightspeed and linked (see Status: Linked)"
   }
  ],
  "index_web_pages_for_search": 1,
