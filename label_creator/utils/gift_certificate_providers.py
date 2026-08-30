@@ -145,6 +145,29 @@ def _link_lightspeed_customer(base_url, headers, doc):
 		"lightspeed_customer_code", customer_doc.get("lightspeed_customer_code"), commit=True
 	)
 
+	return customer_doc
+
+
+def _upsert_gift_card(doc, gift_card, customer_doc):
+	"""
+	Mirror the Lightspeed gift card locally as a Gift Card record, so it can
+	be looked up/reported on without calling out to Lightspeed. Keyed by
+	code (the gift card number), so re-redeeming the same certificate code
+	updates the existing record instead of duplicating it.
+	"""
+	name = frappe.db.exists("Gift Card", doc.certificate_code)
+	card = frappe.get_doc("Gift Card", name) if name else frappe.new_doc("Gift Card")
+
+	card.code = doc.certificate_code
+	card.gift_certificate = doc.name
+	card.balance = gift_card.get("balance", doc.amount)
+	card.status = gift_card.get("status") or "Active"
+	card.created_at = gift_card.get("created_at") or frappe.utils.now_datetime()
+	card.last_used = gift_card.get("last_used")
+	card.customer = customer_doc.name
+
+	card.save(ignore_permissions=True)
+
 
 def _activate_lightspeed(doc):
 	try:
@@ -163,8 +186,10 @@ def _activate_lightspeed(doc):
 		gift_card = _create_lightspeed_gift_card(base_url, headers, doc)
 		doc.db_set("status", "Activated", commit=True)
 
-		_link_lightspeed_customer(base_url, headers, doc)
+		customer_doc = _link_lightspeed_customer(base_url, headers, doc)
 		doc.db_set("status", "Linked", commit=True)
+
+		_upsert_gift_card(doc, gift_card, customer_doc)
 
 		frappe.msgprint(
 			_("Gift Card <b>{0}</b> successfully created in Lightspeed (Balance: {1})").format(
