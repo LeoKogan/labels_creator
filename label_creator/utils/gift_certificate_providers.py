@@ -61,6 +61,40 @@ def get_provider_credentials(service_name):
 	return None, None
 
 
+def _find_lightspeed_customer(base_url, headers, email):
+	"""Look up an existing Lightspeed customer by email. Returns the
+	customer id, or None if no match is found."""
+	url = f"{base_url}/2.0/customers"
+	response = frappe.make_get_request(url, params={"email": email}, headers=headers)
+	response = response if isinstance(response, dict) else {}
+	customers = response.get("data") or []
+	return customers[0].get("id") if customers else None
+
+
+def _create_lightspeed_customer(base_url, headers, doc):
+	"""Create a new Lightspeed customer from the redeemer's details."""
+	url = f"{base_url}/2.0/customers"
+	payload = {
+		"first_name": doc.first_name,
+		"last_name": doc.last_name,
+		"email": doc.email,
+		"phone": doc.phone_number,
+	}
+	response = frappe.make_post_request(url, json=payload, headers=headers)
+	response = response if isinstance(response, dict) else {}
+	customer_id = (response.get("data") or {}).get("id")
+	if not customer_id:
+		frappe.throw(_("Lightspeed did not return a customer ID after creation."))
+	return customer_id
+
+
+def _get_or_create_lightspeed_customer(base_url, headers, doc):
+	customer_id = _find_lightspeed_customer(base_url, headers, doc.email)
+	if customer_id:
+		return customer_id
+	return _create_lightspeed_customer(base_url, headers, doc)
+
+
 def _activate_lightspeed(doc):
 	try:
 		token, base_url = get_provider_credentials("Lightspeed")
@@ -69,20 +103,37 @@ def _activate_lightspeed(doc):
 				_("Lightspeed credentials not found. Please configure them in Custom API Settings.")
 			)
 
-		url = f"{base_url}/2.0/gift_cards"
-		payload = {
-			"number": doc.certificate_code,
-			"amount": str(doc.amount),
-		}
 		headers = {
 			"Authorization": f"Bearer {token}",
 			"Content-Type": "application/json",
 			"Accept": "application/json",
 		}
 
+		# Redemption requires a Lightspeed customer record to link the gift
+		# card to, so look one up by email and create it on the fly if the
+		# redeemer has never been seen there before.
+		customer_id = _get_or_create_lightspeed_customer(base_url, headers, doc)
+
+		url = f"{base_url}/2.0/gift_cards"
+		payload = {
+			"number": doc.certificate_code,
+			"amount": str(doc.amount),
+			"customer_id": customer_id,
+		}
+
 		data = frappe.make_post_request(url, json=payload, headers=headers)
 		data = data if isinstance(data, dict) else {}
-		balance = (data.get("data") or {}).get("balance")
+		gift_card = data.get("data") or {}
+
+		# Lightspeed responding 200 isn't proof the card exists - only a
+		# returned id/number confirms it. Without that, treat this as a
+		# failure so it surfaces below rather than silently reporting success.
+		if not (gift_card.get("id") or gift_card.get("number")):
+			frappe.throw(
+				_("Lightspeed did not confirm creation of gift card {0}.").format(doc.certificate_code)
+			)
+
+		balance = gift_card.get("balance")
 
 		frappe.msgprint(
 			_("Gift Card <b>{0}</b> successfully created in Lightspeed (Balance: {1})").format(
@@ -93,7 +144,14 @@ def _activate_lightspeed(doc):
 		)
 
 	except Exception as e:
-		frappe.log_error(title="Lightspeed gift card create failed", message=frappe.get_traceback())
+		frappe.log_error(
+			title="Lightspeed gift card activation failed",
+			message=_(
+				"Could not activate gift card {0} in Lightspeed for {1} {2} <{3}>.\n\n{4}"
+			).format(
+				doc.certificate_code, doc.first_name, doc.last_name, doc.email, frappe.get_traceback()
+			),
+		)
 		frappe.msgprint(
 			_("Gift certificate redeemed in ERP, but Lightspeed gift card creation failed: {0}").format(e),
 			indicator="orange",
