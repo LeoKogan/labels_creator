@@ -109,16 +109,19 @@ def _activate_lightspeed(doc):
 			"Accept": "application/json",
 		}
 
-		# Redemption requires a Lightspeed customer record to link the gift
-		# card to, so look one up by email and create it on the fly if the
-		# redeemer has never been seen there before.
-		customer_id = _get_or_create_lightspeed_customer(base_url, headers, doc)
+		# Look up the redeemer in Lightspeed by email and create them there
+		# if they've never been seen before. The gift_cards endpoint has no
+		# customer_id field to link against, so this only ensures the
+		# customer record exists - it doesn't attach it to the card itself.
+		_get_or_create_lightspeed_customer(base_url, headers, doc)
 
 		url = f"{base_url}/2.0/gift_cards"
 		payload = {
 			"number": doc.certificate_code,
 			"amount": str(doc.amount),
-			"customer_id": customer_id,
+			# expires_at is intentionally omitted/left empty - the gift
+			# certificate's own expiration is tracked in the ERP, not mirrored
+			# as a Lightspeed gift card expiry.
 		}
 
 		data = frappe.make_post_request(url, json=payload, headers=headers)
