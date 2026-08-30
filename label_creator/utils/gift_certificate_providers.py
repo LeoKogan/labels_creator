@@ -130,15 +130,19 @@ def _link_lightspeed_customer(base_url, headers, doc):
 	"""
 	customer_doc = frappe.get_doc("Customer", doc.redeemed_by)
 
-	if customer_doc.get("custom_lightspeed_id"):
-		return
+	if not customer_doc.get("custom_lightspeed_id"):
+		lightspeed_customer = _find_lightspeed_customer(base_url, headers, doc.email) or \
+			_create_lightspeed_customer(base_url, headers, doc)
 
-	lightspeed_customer = _find_lightspeed_customer(base_url, headers, doc.email) or \
-		_create_lightspeed_customer(base_url, headers, doc)
+		customer_doc.db_set("custom_lightspeed_id", lightspeed_customer.get("id"), commit=True)
+		customer_doc.db_set(
+			"lightspeed_customer_code", lightspeed_customer.get("customer_code"), commit=True
+		)
 
-	customer_doc.db_set("custom_lightspeed_id", lightspeed_customer.get("id"), commit=True)
-	customer_doc.db_set(
-		"lightspeed_customer_code", lightspeed_customer.get("customer_code"), commit=True
+	# Mirror the link onto the certificate itself so it's visible on the
+	# Gift Certificate form, not just on the linked Customer record.
+	doc.db_set(
+		"lightspeed_customer_code", customer_doc.get("lightspeed_customer_code"), commit=True
 	)
 
 
