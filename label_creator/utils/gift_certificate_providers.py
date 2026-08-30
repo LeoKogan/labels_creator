@@ -61,14 +61,46 @@ def get_provider_credentials(service_name):
 	return None, None
 
 
+def _create_lightspeed_gift_card(base_url, headers, doc):
+	"""
+	Call 1 of 2: create the gift card in Lightspeed for the certificate's
+	amount. A confirmed response is what "Activated" means for this
+	certificate - the card now exists in Lightspeed and is usable, separate
+	from who (if anyone) it ends up linked to.
+	"""
+	url = f"{base_url}/2.0/gift_cards"
+	payload = {
+		"number": doc.certificate_code,
+		"amount": str(doc.amount),
+		# expires_at is intentionally omitted/left empty - the gift
+		# certificate's own expiration is tracked in the ERP, not mirrored
+		# as a Lightspeed gift card expiry. time_zone/user_id are likewise
+		# left out.
+	}
+
+	data = frappe.make_post_request(url, json=payload, headers=headers)
+	data = data if isinstance(data, dict) else {}
+	gift_card = data.get("data") or {}
+
+	# Lightspeed responding 200 isn't proof the card exists - only a
+	# returned id/number confirms it. Without that, treat this as a
+	# failure so it surfaces below rather than silently reporting success.
+	if not (gift_card.get("id") or gift_card.get("number")):
+		frappe.throw(
+			_("Lightspeed did not confirm creation of gift card {0}.").format(doc.certificate_code)
+		)
+
+	return gift_card
+
+
 def _find_lightspeed_customer(base_url, headers, email):
 	"""Look up an existing Lightspeed customer by email. Returns the
-	customer id, or None if no match is found."""
+	customer record, or None if no match is found."""
 	url = f"{base_url}/2.0/customers"
 	response = frappe.make_get_request(url, params={"email": email}, headers=headers)
 	response = response if isinstance(response, dict) else {}
 	customers = response.get("data") or []
-	return customers[0].get("id") if customers else None
+	return customers[0] if customers else None
 
 
 def _create_lightspeed_customer(base_url, headers, doc):
@@ -82,17 +114,32 @@ def _create_lightspeed_customer(base_url, headers, doc):
 	}
 	response = frappe.make_post_request(url, json=payload, headers=headers)
 	response = response if isinstance(response, dict) else {}
-	customer_id = (response.get("data") or {}).get("id")
-	if not customer_id:
+	customer = response.get("data") or {}
+	if not customer.get("id"):
 		frappe.throw(_("Lightspeed did not return a customer ID after creation."))
-	return customer_id
+	return customer
 
 
-def _get_or_create_lightspeed_customer(base_url, headers, doc):
-	customer_id = _find_lightspeed_customer(base_url, headers, doc.email)
-	if customer_id:
-		return customer_id
-	return _create_lightspeed_customer(base_url, headers, doc)
+def _link_lightspeed_customer(base_url, headers, doc):
+	"""
+	Call 2 of 2: find or create the redeemer's Lightspeed customer, and
+	record the link on their ERPNext Customer record (custom_lightspeed_id /
+	lightspeed_customer_code) so this and future redemptions reuse the same
+	Lightspeed customer instead of creating duplicates. A confirmed link is
+	what "Linked" means for this certificate.
+	"""
+	customer_doc = frappe.get_doc("Customer", doc.redeemed_by)
+
+	if customer_doc.get("custom_lightspeed_id"):
+		return
+
+	lightspeed_customer = _find_lightspeed_customer(base_url, headers, doc.email) or \
+		_create_lightspeed_customer(base_url, headers, doc)
+
+	customer_doc.db_set("custom_lightspeed_id", lightspeed_customer.get("id"), commit=True)
+	customer_doc.db_set(
+		"lightspeed_customer_code", lightspeed_customer.get("customer_code"), commit=True
+	)
 
 
 def _activate_lightspeed(doc):
@@ -109,38 +156,15 @@ def _activate_lightspeed(doc):
 			"Accept": "application/json",
 		}
 
-		# Look up the redeemer in Lightspeed by email and create them there
-		# if they've never been seen before. The gift_cards endpoint has no
-		# customer_id field to link against, so this only ensures the
-		# customer record exists - it doesn't attach it to the card itself.
-		_get_or_create_lightspeed_customer(base_url, headers, doc)
+		gift_card = _create_lightspeed_gift_card(base_url, headers, doc)
+		doc.db_set("status", "Activated", commit=True)
 
-		url = f"{base_url}/2.0/gift_cards"
-		payload = {
-			"number": doc.certificate_code,
-			"amount": str(doc.amount),
-			# expires_at is intentionally omitted/left empty - the gift
-			# certificate's own expiration is tracked in the ERP, not mirrored
-			# as a Lightspeed gift card expiry.
-		}
-
-		data = frappe.make_post_request(url, json=payload, headers=headers)
-		data = data if isinstance(data, dict) else {}
-		gift_card = data.get("data") or {}
-
-		# Lightspeed responding 200 isn't proof the card exists - only a
-		# returned id/number confirms it. Without that, treat this as a
-		# failure so it surfaces below rather than silently reporting success.
-		if not (gift_card.get("id") or gift_card.get("number")):
-			frappe.throw(
-				_("Lightspeed did not confirm creation of gift card {0}.").format(doc.certificate_code)
-			)
-
-		balance = gift_card.get("balance")
+		_link_lightspeed_customer(base_url, headers, doc)
+		doc.db_set("status", "Linked", commit=True)
 
 		frappe.msgprint(
 			_("Gift Card <b>{0}</b> successfully created in Lightspeed (Balance: {1})").format(
-				doc.certificate_code, balance
+				doc.certificate_code, gift_card.get("balance")
 			),
 			indicator="green",
 			alert=True,
