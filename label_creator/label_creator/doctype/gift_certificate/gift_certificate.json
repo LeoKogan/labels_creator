@@ -143,9 +143,8 @@
    "fieldname": "lightspeed_customer_code",
    "fieldtype": "Data",
    "label": "Lightspeed Customer Code",
-   "read_only": 1,
    "in_list_view": 1,
-   "description": "Set once the redeemer has been found or created as a customer in Lightspeed and linked (see Status: Linked)"
+   "description": "Set automatically once the redeemer has been found or created as a customer in Lightspeed and linked (see Status: Linked). If automatic activation/linking failed, staff can look up or create the customer in Lightspeed directly and paste their Customer Code here to finish the link manually."
   }
  ],
  "index_web_pages_for_search": 1,

@@ -2,7 +2,7 @@ import re
 
 import frappe
 from frappe import _
-from frappe.integrations.utils import make_get_request, make_post_request
+from frappe.integrations.utils import make_get_request, make_post_request, make_request
 
 # Matches the version segment Lightspeed's Retail API requires at the end
 # of the Base URL - either a dated version like ".../api/2026-07" or the
@@ -113,6 +113,14 @@ def _lightspeed_versioned_base_url(row, base_url):
 	loudly rather than let a missing/blank version silently 404 every
 	Lightspeed request.
 	"""
+	# Base URL may already carry the version segment (some rows have it
+	# baked in directly instead of relying on api_version) - appending
+	# api_version on top of that would double it up, e.g.
+	# ".../api/2.0/2.0", and 404 every request. If it's already there,
+	# leave base_url alone.
+	if LIGHTSPEED_VERSIONED_BASE_URL_RE.search(base_url):
+		return base_url
+
 	api_version = (row.get("api_version") or "").strip()
 	if api_version:
 		if not LIGHTSPEED_API_VERSION_RE.match(api_version):
@@ -185,10 +193,14 @@ def _create_lightspeed_gift_card(base_url, headers, doc):
 
 
 def _find_lightspeed_customer(base_url, headers, email):
-	"""Look up an existing Lightspeed customer by email. Returns the
-	customer record, or None if no match is found."""
-	url = f"{base_url}/customers"
-	response = make_get_request(url, params={"email": email}, headers=headers)
+	"""
+	Look up an existing Lightspeed customer by email via the /search
+	endpoint (type=customers) - the dedicated /customers list endpoint
+	doesn't support filtering by email, /search does. Returns the customer
+	record, or None if no match is found.
+	"""
+	url = f"{base_url}/search"
+	response = make_get_request(url, params={"type": "customers", "email": email}, headers=headers)
 	response = response if isinstance(response, dict) else {}
 	customers = response.get("data") or []
 	return customers[0] if customers else None
@@ -207,6 +219,32 @@ def _create_lightspeed_customer(base_url, headers, doc):
 	customer = _unwrap_lightspeed_object(response)
 	if not customer.get("id"):
 		frappe.throw(_("Lightspeed did not return a customer ID after creation."))
+	return customer
+
+
+def _update_lightspeed_customer(base_url, headers, customer_id, doc):
+	"""
+	Update an existing Lightspeed customer's email/phone from the
+	redeemer's current details - the redeemer may have provided a newer
+	email or phone number than what's on file in Lightspeed since this
+	customer was last linked.
+
+	first_name/last_name are included even though they're not changing -
+	PUT /customers/{id} takes the full CustomerBase object and both are
+	required fields there, so omitting them risks either a 400 or having
+	the update silently wipe them.
+	"""
+	url = f"{base_url}/customers/{customer_id}"
+	payload = {
+		"first_name": doc.first_name,
+		"last_name": doc.last_name,
+		"email": doc.email,
+		"phone": doc.phone_number,
+	}
+	response = make_request("PUT", url, json=payload, headers=headers)
+	customer = _unwrap_lightspeed_object(response)
+	if not customer.get("id"):
+		frappe.throw(_("Lightspeed did not confirm the customer update for {0}.").format(customer_id))
 	return customer
 
 
@@ -232,8 +270,11 @@ def _link_lightspeed_customer(base_url, headers, doc, context):
 		found = _find_lightspeed_customer(base_url, headers, doc.email)
 		context["lightspeed_customer_search_by_email"] = doc.email
 		if found:
-			context["lightspeed_customer_lookup"] = "found existing customer in Lightspeed"
-			lightspeed_customer = found
+			context["lightspeed_customer_lookup"] = "found existing customer in Lightspeed - updating email/phone"
+			# Refresh email/phone on the Lightspeed side to match what the
+			# redeemer just provided, since it may be newer than what's on
+			# file there. The id from this update is what gets linked.
+			lightspeed_customer = _update_lightspeed_customer(base_url, headers, found.get("id"), doc)
 		else:
 			context["lightspeed_customer_lookup"] = "no match in Lightspeed - creating new customer"
 			lightspeed_customer = _create_lightspeed_customer(base_url, headers, doc)
