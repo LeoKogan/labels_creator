@@ -228,9 +228,19 @@ def _update_lightspeed_customer(base_url, headers, customer_id, doc):
 	redeemer's current details - the redeemer may have provided a newer
 	email or phone number than what's on file in Lightspeed since this
 	customer was last linked.
+
+	first_name/last_name are included even though they're not changing -
+	PUT /customers/{id} takes the full CustomerBase object and both are
+	required fields there, so omitting them risks either a 400 or having
+	the update silently wipe them.
 	"""
 	url = f"{base_url}/customers/{customer_id}"
-	payload = {"email": doc.email, "phone": doc.phone_number}
+	payload = {
+		"first_name": doc.first_name,
+		"last_name": doc.last_name,
+		"email": doc.email,
+		"phone": doc.phone_number,
+	}
 	response = make_request("PUT", url, json=payload, headers=headers)
 	customer = _unwrap_lightspeed_object(response)
 	if not customer.get("id"):
