@@ -144,7 +144,11 @@ def _create_lightspeed_gift_card(base_url, headers, doc):
 	url = f"{base_url}/gift_cards"
 	payload = {
 		"number": doc.certificate_code,
-		"amount": str(doc.amount),
+		# Lightspeed's gift card amounts are strings for precision (see
+		# GiftCardCollection docs) and reject anything not formatted to
+		# exactly two decimal places - str(doc.amount) on a currency field
+		# like 35.0 produces "35.0", not "35.00", and 400s.
+		"amount": f"{doc.amount:.2f}",
 		# expires_at is intentionally omitted/left empty - the gift
 		# certificate's own expiration is tracked in the ERP, not mirrored
 		# as a Lightspeed gift card expiry. time_zone/user_id are likewise
