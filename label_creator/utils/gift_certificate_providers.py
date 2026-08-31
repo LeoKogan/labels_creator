@@ -10,6 +10,10 @@ from frappe.integrations.utils import make_get_request, make_post_request
 # from Lightspeed itself (see get_provider_credentials()).
 LIGHTSPEED_VERSIONED_BASE_URL_RE = re.compile(r"/\d{4}-\d{2}$")
 
+# Matches a bare dated version like "2026-07", to validate the API Key
+# Detail row's own `api_version` field when present.
+LIGHTSPEED_API_VERSION_RE = re.compile(r"^\d{4}-\d{2}$")
+
 
 def _console_log(label, data):
 	"""
@@ -75,10 +79,12 @@ def get_provider_credentials(service_name):
 	the doctype doesn't exist on this site or no matching, enabled,
 	fully-configured row is found.
 
-	For "Lightspeed", Base URL must include the dated API version segment,
-	e.g. "https://crafted.retail.lightspeed.app/api/2026-07" - Lightspeed
-	revs this periodically, and there's no field here to split it out, so
-	bumping it is a Custom API Settings edit rather than a code change.
+	For "Lightspeed", the returned base_url has the dated API version
+	segment applied, e.g. "https://crafted.retail.lightspeed.app/api/2026-07"
+	- Lightspeed revs this periodically. The version comes from the API Key
+	Detail row's own `api_version` field when that field is present and
+	filled in (e.g. "2026-07"); otherwise it must already be the last
+	segment of Base URL, for sites where that field doesn't exist.
 	"""
 	if not frappe.db.table_exists("Custom API Settings"):
 		return None, None
@@ -88,20 +94,44 @@ def get_provider_credentials(service_name):
 		for row in settings.get("api_keys") or []:
 			if row.service_name == service_name and row.enabled:
 				token = row.get_password("api_key")
-				base_url = (row.base_url or "").rstrip("/")
+				base_url = (row.base_url or "").strip().rstrip("/")
 				if token and base_url:
-					if service_name == "Lightspeed" and not LIGHTSPEED_VERSIONED_BASE_URL_RE.search(base_url):
-						frappe.throw(
-							_(
-								"Lightspeed Base URL in Custom API Settings is missing its dated API "
-								"version segment (e.g. .../api/2026-07) - got {0}. Without it, every "
-								"request 404s against Lightspeed. Update the Base URL in Custom API "
-								"Settings and try again."
-							).format(base_url)
-						)
+					if service_name == "Lightspeed":
+						base_url = _lightspeed_versioned_base_url(row, base_url)
 					return token, base_url
 
 	return None, None
+
+
+def _lightspeed_versioned_base_url(row, base_url):
+	"""
+	Append the API Key Detail row's `api_version` (e.g. "2026-07") to
+	base_url if that field exists and is filled in. Otherwise, fall back to
+	requiring the version already be the last segment of base_url, and fail
+	loudly rather than let a missing/blank version silently 404 every
+	Lightspeed request.
+	"""
+	api_version = (row.get("api_version") or "").strip()
+	if api_version:
+		if not LIGHTSPEED_API_VERSION_RE.match(api_version):
+			frappe.throw(
+				_(
+					"Lightspeed API Version in Custom API Settings is not a dated version "
+					"(expected e.g. 2026-07) - got {0}."
+				).format(api_version)
+			)
+		return f"{base_url}/{api_version}"
+
+	if not LIGHTSPEED_VERSIONED_BASE_URL_RE.search(base_url):
+		frappe.throw(
+			_(
+				"Lightspeed Base URL in Custom API Settings is missing its dated API "
+				"version segment (e.g. .../api/2026-07) - got {0}. Without it, every "
+				"request 404s against Lightspeed. Either set API Version on the row, "
+				"or add the version segment to Base URL, and try again."
+			).format(base_url)
+		)
+	return base_url
 
 
 def _create_lightspeed_gift_card(base_url, headers, doc):
