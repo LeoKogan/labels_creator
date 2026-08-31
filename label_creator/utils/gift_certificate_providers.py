@@ -312,8 +312,15 @@ def _upsert_gift_card(doc, gift_card, customer_doc):
 	card.gift_certificate = doc.name
 	card.balance = gift_card.get("balance", doc.amount)
 	card.status = gift_card.get("status") or "Active"
-	card.created_at = gift_card.get("created_at") or frappe.utils.now_datetime()
-	card.last_used = gift_card.get("last_used")
+	# Lightspeed's timestamps are ISO-8601 ("2026-08-31T20:53:27+00:00"),
+	# which MySQL's Datetime columns reject outright (errno 1292) - convert
+	# to a naive datetime Frappe can actually store.
+	card.created_at = (
+		frappe.utils.get_datetime(gift_card["created_at"])
+		if gift_card.get("created_at")
+		else frappe.utils.now_datetime()
+	)
+	card.last_used = frappe.utils.get_datetime(gift_card["last_used"]) if gift_card.get("last_used") else None
 	card.customer = customer_doc.name
 
 	card.save(ignore_permissions=True)
