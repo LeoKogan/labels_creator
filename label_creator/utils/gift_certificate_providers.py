@@ -136,6 +136,20 @@ def _lightspeed_versioned_base_url(row, base_url):
 	return base_url
 
 
+def _unwrap_lightspeed_object(response):
+	"""
+	Lightspeed's dated API versions (e.g. 2026-07) wrap a single-object
+	response as {"data": {...}}, but the legacy 2.0 version returns the
+	object flat - confirmed against a real POST /gift_cards response on
+	2.0 that had no "data" key at all. Handle both so callers don't
+	silently treat a real object as "not found" just because it wasn't
+	wrapped.
+	"""
+	response = response if isinstance(response, dict) else {}
+	data = response.get("data")
+	return data if isinstance(data, dict) else response
+
+
 def _create_lightspeed_gift_card(base_url, headers, doc):
 	"""
 	Call 1 of 2: create the gift card in Lightspeed for the certificate's
@@ -157,8 +171,7 @@ def _create_lightspeed_gift_card(base_url, headers, doc):
 	}
 
 	data = make_post_request(url, json=payload, headers=headers)
-	data = data if isinstance(data, dict) else {}
-	gift_card = data.get("data") or {}
+	gift_card = _unwrap_lightspeed_object(data)
 
 	# Lightspeed responding 200 isn't proof the card exists - only a
 	# returned id/number confirms it. Without that, treat this as a
@@ -191,8 +204,7 @@ def _create_lightspeed_customer(base_url, headers, doc):
 		"phone": doc.phone_number,
 	}
 	response = make_post_request(url, json=payload, headers=headers)
-	response = response if isinstance(response, dict) else {}
-	customer = response.get("data") or {}
+	customer = _unwrap_lightspeed_object(response)
 	if not customer.get("id"):
 		frappe.throw(_("Lightspeed did not return a customer ID after creation."))
 	return customer
