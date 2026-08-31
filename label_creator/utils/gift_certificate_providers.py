@@ -1,5 +1,6 @@
 import frappe
 from frappe import _
+from frappe.integrations.utils import make_get_request, make_post_request
 
 
 def _console_log(label, data):
@@ -24,28 +25,38 @@ def activate_gift_certificate(doc):
 	writing another `_activate_<provider>(doc)` function and registering it
 	below - nothing about the Gift Certificate doctype or the redemption
 	flow needs to change.
+
+	Returns True if the certificate is now genuinely usable (either no
+	provider is configured, so there's nothing to report, or the provider
+	confirms the underlying gift card was created) and False if activation
+	was attempted but failed - the caller uses this to tell the customer to
+	reach out for help instead of claiming success. Anything past that point
+	(e.g. linking the redeemer to a POS customer record) is the provider's
+	own internal bookkeeping: it's never allowed to flip this back to False,
+	only logged for staff to follow up on.
 	"""
 	if not doc.gift_certificate_type:
-		return
+		return True
 
 	provider = frappe.db.get_value("Gift Certificate Type", doc.gift_certificate_type, "provider")
 	handler = PROVIDER_HANDLERS.get(provider)
 	if not handler:
-		return
+		return True
 
 	try:
-		handler(doc)
+		return handler(doc)
 	except Exception:
-		# Activation is a best-effort side effect on top of the Gift
-		# Certificate record - a provider/credentials problem (e.g. Custom
-		# API Settings not configured on this site) must never block the
-		# certificate itself from being saved. Each handler already reports
-		# its own failures via msgprint; this is just a safety net in case
-		# one doesn't.
+		# A provider/credentials problem (e.g. Custom API Settings not
+		# configured on this site) must never block the certificate record
+		# itself from being saved - the ERP-side redemption already
+		# happened by the time this runs. Each handler already reports its
+		# own failures via log_error/msgprint; this is just a safety net in
+		# case one doesn't.
 		frappe.log_error(
 			title=f"{provider} gift certificate activation failed",
 			message=frappe.get_traceback(),
 		)
+		return False
 
 
 def get_provider_credentials(service_name):
@@ -55,6 +66,11 @@ def get_provider_credentials(service_name):
 	elsewhere on this site, keyed by service name. Returns (None, None) if
 	the doctype doesn't exist on this site or no matching, enabled,
 	fully-configured row is found.
+
+	For "Lightspeed", Base URL must include the dated API version segment,
+	e.g. "https://crafted.retail.lightspeed.app/api/2026-07" - Lightspeed
+	revs this periodically, and there's no field here to split it out, so
+	bumping it is a Custom API Settings edit rather than a code change.
 	"""
 	if not frappe.db.table_exists("Custom API Settings"):
 		return None, None
@@ -78,7 +94,7 @@ def _create_lightspeed_gift_card(base_url, headers, doc):
 	certificate - the card now exists in Lightspeed and is usable, separate
 	from who (if anyone) it ends up linked to.
 	"""
-	url = f"{base_url}/2.0/gift_cards"
+	url = f"{base_url}/gift_cards"
 	payload = {
 		"number": doc.certificate_code,
 		"amount": str(doc.amount),
@@ -88,7 +104,7 @@ def _create_lightspeed_gift_card(base_url, headers, doc):
 		# left out.
 	}
 
-	data = frappe.make_post_request(url, json=payload, headers=headers)
+	data = make_post_request(url, json=payload, headers=headers)
 	data = data if isinstance(data, dict) else {}
 	gift_card = data.get("data") or {}
 
@@ -106,8 +122,8 @@ def _create_lightspeed_gift_card(base_url, headers, doc):
 def _find_lightspeed_customer(base_url, headers, email):
 	"""Look up an existing Lightspeed customer by email. Returns the
 	customer record, or None if no match is found."""
-	url = f"{base_url}/2.0/customers"
-	response = frappe.make_get_request(url, params={"email": email}, headers=headers)
+	url = f"{base_url}/customers"
+	response = make_get_request(url, params={"email": email}, headers=headers)
 	response = response if isinstance(response, dict) else {}
 	customers = response.get("data") or []
 	return customers[0] if customers else None
@@ -115,14 +131,14 @@ def _find_lightspeed_customer(base_url, headers, email):
 
 def _create_lightspeed_customer(base_url, headers, doc):
 	"""Create a new Lightspeed customer from the redeemer's details."""
-	url = f"{base_url}/2.0/customers"
+	url = f"{base_url}/customers"
 	payload = {
 		"first_name": doc.first_name,
 		"last_name": doc.last_name,
 		"email": doc.email,
 		"phone": doc.phone_number,
 	}
-	response = frappe.make_post_request(url, json=payload, headers=headers)
+	response = make_post_request(url, json=payload, headers=headers)
 	response = response if isinstance(response, dict) else {}
 	customer = response.get("data") or {}
 	if not customer.get("id"):
@@ -199,6 +215,19 @@ def _upsert_gift_card(doc, gift_card, customer_doc):
 
 
 def _activate_lightspeed(doc):
+	"""
+	Returns True if the Lightspeed gift card itself was successfully
+	created - this is "activation", the only part of this process the
+	customer-facing redemption page reports on. Returns False if that step
+	failed, so the customer can be told to reach out for help rather than
+	being shown a false success.
+
+	Linking the redeemer to a Lightspeed customer happens right after, but
+	is purely internal bookkeeping (see the Gift Certificate's own
+	Created/Activated/Linked status field). Any failure there is caught,
+	logged with full context for staff to finish manually, and never
+	changes the return value - the card itself still exists and is usable.
+	"""
 	# Filled in as each step below completes, so that if something fails
 	# partway through, the error log shows exactly what already happened in
 	# Lightspeed (and with which IDs) instead of just a traceback - enough
@@ -223,11 +252,40 @@ def _activate_lightspeed(doc):
 			"Accept": "application/json",
 		}
 
-		gift_card = _create_lightspeed_gift_card(base_url, headers, doc)
-		context["gift_card_response"] = gift_card
-		_console_log(f"Gift card created for {doc.certificate_code}", gift_card)
-		doc.db_set("status", "Activated", commit=True)
+		if doc.status in ("Activated", "Linked"):
+			# This is a retry after the customer-link step failed on an
+			# earlier attempt (status="Activated" doesn't block
+			# re-redemption - only Linked/Cancelled/Suspended/Expired do).
+			# The gift card already exists in Lightspeed; recreating it
+			# would send a duplicate `number` and likely get rejected,
+			# wrongly telling an already-activated customer their card
+			# failed. Skip straight to (re)trying the customer link.
+			gift_card = {}
+			context["gift_card_response"] = "skipped - already Activated in an earlier attempt"
+		else:
+			gift_card = _create_lightspeed_gift_card(base_url, headers, doc)
+			context["gift_card_response"] = gift_card
+			_console_log(f"Gift card created for {doc.certificate_code}", gift_card)
+			doc.db_set("status", "Activated", commit=True)
 
+	except Exception as e:
+		context["error"] = str(e)
+		_console_log(f"Activation FAILED for {doc.certificate_code}", context)
+		frappe.log_error(
+			title="Lightspeed gift card activation failed",
+			message=_(
+				"Could not activate gift certificate {0} in Lightspeed - the customer needs to be\n"
+				"told to reach out, and this needs to be finished manually.\n\n{1}\n\nError: {2}\n\n{3}"
+			).format(doc.certificate_code, frappe.as_json(context, indent=2), e, frappe.get_traceback()),
+		)
+		return False
+
+	# From this point on, the gift card exists and the customer's
+	# redemption succeeded - everything below is internal bookkeeping
+	# (linking the Lightspeed customer, mirroring the Gift Card record) and
+	# must never turn a successful activation into a customer-facing
+	# failure. Any problem here is only ever logged for staff follow-up.
+	try:
 		customer_doc = _link_lightspeed_customer(base_url, headers, doc, context)
 		_console_log(f"Customer linked for {doc.certificate_code}", context)
 		doc.db_set("status", "Linked", commit=True)
@@ -236,7 +294,7 @@ def _activate_lightspeed(doc):
 
 		frappe.msgprint(
 			_("Gift Card <b>{0}</b> successfully created in Lightspeed (Balance: {1}, Customer ID: {2})").format(
-				doc.certificate_code, gift_card.get("balance"), context.get("lightspeed_customer_id")
+				doc.certificate_code, gift_card.get("balance", doc.amount), context.get("lightspeed_customer_id")
 			),
 			indicator="green",
 			alert=True,
@@ -244,26 +302,24 @@ def _activate_lightspeed(doc):
 
 	except Exception as e:
 		context["error"] = str(e)
-		_console_log(f"Activation FAILED for {doc.certificate_code}", context)
+		_console_log(f"Customer link FAILED for {doc.certificate_code} (gift card was created OK)", context)
 		frappe.log_error(
-			title="Lightspeed gift card activation failed",
+			title="Lightspeed customer link failed - finish manually",
 			message=_(
-				"Could not fully activate gift certificate {0} in Lightspeed.\n\n"
-				"Progress so far - use this to work out what, if anything, still needs to be\n"
-				"finished manually in Lightspeed:\n{1}\n\n"
-				"Error: {2}\n\n{3}"
-			).format(
-				doc.certificate_code,
-				frappe.as_json(context, indent=2),
-				e,
-				frappe.get_traceback(),
-			),
+				"Gift card {0} was created successfully in Lightspeed, but linking the redeemer's\n"
+				"Lightspeed customer failed. The customer was NOT told about this - the gift card is\n"
+				"usable. Use this to link the customer manually in Lightspeed:\n\n{1}\n\nError: {2}\n\n{3}"
+			).format(doc.certificate_code, frappe.as_json(context, indent=2), e, frappe.get_traceback()),
 		)
 		frappe.msgprint(
-			_("Gift certificate redeemed in ERP, but Lightspeed gift card creation failed: {0}").format(e),
+			_("Gift Card <b>{0}</b> created in Lightspeed, but linking the customer failed - see Error Log.").format(
+				doc.certificate_code
+			),
 			indicator="orange",
 			alert=True,
 		)
+
+	return True
 
 
 # Register new providers here as they come online, e.g. "Square": _activate_square

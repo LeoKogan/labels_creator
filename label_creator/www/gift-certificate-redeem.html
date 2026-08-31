@@ -252,6 +252,9 @@
     }
 
     function parseErrorMessage(data) {
+        if (data.message && data.message.message) {
+            return data.message.message;
+        }
         if (data._server_messages) {
             try {
                 return JSON.parse(JSON.parse(data._server_messages)[0]).message;

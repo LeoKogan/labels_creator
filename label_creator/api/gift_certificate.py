@@ -137,13 +137,26 @@ def _register(gift_certificate, first_name, last_name, email, phone_number):
 	doc.phone_number = phone_number
 	doc.redeem_date = nowdate()
 	doc.redeemed_by = customer
-	doc.status = "Linked"
 	doc.save(ignore_permissions=True)
 	frappe.db.commit()
 
 	# Create the matching POS gift card (e.g. Lightspeed) now that the
 	# certificate is actually being redeemed, not when it was first created.
-	activate_gift_certificate(doc)
+	# This is what the customer-facing response below reports on: it's the
+	# gift card itself that they need to know worked or didn't. Linking the
+	# redeemer to a POS customer record is separate, internal bookkeeping
+	# that never affects this response - only the Gift Certificate's own
+	# status field and staff-facing logs.
+	activated = activate_gift_certificate(doc)
+
+	if not activated:
+		return {
+			"status": "error",
+			"message": _(
+				"Your details were saved, but we couldn't activate your gift card. "
+				"Please contact us at shop@craftedgoods.ca so we can sort this out for you."
+			),
+		}
 
 	return {
 		"status": "success",
