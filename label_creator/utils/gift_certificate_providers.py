@@ -1,6 +1,14 @@
+import re
+
 import frappe
 from frappe import _
 from frappe.integrations.utils import make_get_request, make_post_request
+
+# Matches the dated version segment Lightspeed's Retail API requires at the
+# end of the Base URL, e.g. ".../api/2026-07". Used to catch a Base URL
+# that's missing/dropped this segment before it turns into a confusing 404
+# from Lightspeed itself (see get_provider_credentials()).
+LIGHTSPEED_VERSIONED_BASE_URL_RE = re.compile(r"/\d{4}-\d{2}$")
 
 
 def _console_log(label, data):
@@ -82,6 +90,15 @@ def get_provider_credentials(service_name):
 				token = row.get_password("api_key")
 				base_url = (row.base_url or "").rstrip("/")
 				if token and base_url:
+					if service_name == "Lightspeed" and not LIGHTSPEED_VERSIONED_BASE_URL_RE.search(base_url):
+						frappe.throw(
+							_(
+								"Lightspeed Base URL in Custom API Settings is missing its dated API "
+								"version segment (e.g. .../api/2026-07) - got {0}. Without it, every "
+								"request 404s against Lightspeed. Update the Base URL in Custom API "
+								"Settings and try again."
+							).format(base_url)
+						)
 					return token, base_url
 
 	return None, None
