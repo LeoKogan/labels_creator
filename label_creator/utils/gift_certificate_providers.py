@@ -2,6 +2,16 @@ import frappe
 from frappe import _
 
 
+def _console_log(label, data):
+	"""
+	Print the Lightspeed transaction data to the server console (stdout),
+	visible in `bench start`/worker logs - in addition to the Error Log
+	entry written on failure, so the request/response for a redemption can
+	be watched live while debugging, not just found after the fact.
+	"""
+	print(f"[Gift Certificate / Lightspeed] {label}:\n{frappe.as_json(data, indent=2)}")
+
+
 def activate_gift_certificate(doc):
 	"""
 	Called when a Gift Certificate is redeemed (see
@@ -120,24 +130,43 @@ def _create_lightspeed_customer(base_url, headers, doc):
 	return customer
 
 
-def _link_lightspeed_customer(base_url, headers, doc):
+def _link_lightspeed_customer(base_url, headers, doc, context):
 	"""
 	Call 2 of 2: find or create the redeemer's Lightspeed customer, and
 	record the link on their ERPNext Customer record (custom_lightspeed_id /
 	lightspeed_customer_code) so this and future redemptions reuse the same
 	Lightspeed customer instead of creating duplicates. A confirmed link is
 	what "Linked" means for this certificate.
+
+	Records each decision/result into `context` as it goes, so that if a
+	later step throws, the error log already shows how far this got and
+	with which Lightspeed customer - enough for staff to finish the
+	redemption manually in Lightspeed without having to guess or redo work.
 	"""
 	customer_doc = frappe.get_doc("Customer", doc.redeemed_by)
+	context["erpnext_customer"] = customer_doc.name
 
-	if not customer_doc.get("custom_lightspeed_id"):
-		lightspeed_customer = _find_lightspeed_customer(base_url, headers, doc.email) or \
-			_create_lightspeed_customer(base_url, headers, doc)
+	if customer_doc.get("custom_lightspeed_id"):
+		context["lightspeed_customer_lookup"] = "already linked on Customer record"
+	else:
+		found = _find_lightspeed_customer(base_url, headers, doc.email)
+		context["lightspeed_customer_search_by_email"] = doc.email
+		if found:
+			context["lightspeed_customer_lookup"] = "found existing customer in Lightspeed"
+			lightspeed_customer = found
+		else:
+			context["lightspeed_customer_lookup"] = "no match in Lightspeed - creating new customer"
+			lightspeed_customer = _create_lightspeed_customer(base_url, headers, doc)
+
+		context["lightspeed_customer_response"] = lightspeed_customer
 
 		customer_doc.db_set("custom_lightspeed_id", lightspeed_customer.get("id"), commit=True)
 		customer_doc.db_set(
 			"lightspeed_customer_code", lightspeed_customer.get("customer_code"), commit=True
 		)
+
+	context["lightspeed_customer_id"] = customer_doc.get("custom_lightspeed_id")
+	context["lightspeed_customer_code"] = customer_doc.get("lightspeed_customer_code")
 
 	# Mirror the link onto the certificate itself so it's visible on the
 	# Gift Certificate form, not just on the linked Customer record.
@@ -170,6 +199,17 @@ def _upsert_gift_card(doc, gift_card, customer_doc):
 
 
 def _activate_lightspeed(doc):
+	# Filled in as each step below completes, so that if something fails
+	# partway through, the error log shows exactly what already happened in
+	# Lightspeed (and with which IDs) instead of just a traceback - enough
+	# for staff to tell what's left to finish by hand.
+	context = {
+		"certificate_code": doc.certificate_code,
+		"amount": doc.amount,
+		"redeemer": f"{doc.first_name} {doc.last_name} <{doc.email}>",
+		"erpnext_customer": doc.redeemed_by,
+	}
+
 	try:
 		token, base_url = get_provider_credentials("Lightspeed")
 		if not token or not base_url:
@@ -184,28 +224,39 @@ def _activate_lightspeed(doc):
 		}
 
 		gift_card = _create_lightspeed_gift_card(base_url, headers, doc)
+		context["gift_card_response"] = gift_card
+		_console_log(f"Gift card created for {doc.certificate_code}", gift_card)
 		doc.db_set("status", "Activated", commit=True)
 
-		customer_doc = _link_lightspeed_customer(base_url, headers, doc)
+		customer_doc = _link_lightspeed_customer(base_url, headers, doc, context)
+		_console_log(f"Customer linked for {doc.certificate_code}", context)
 		doc.db_set("status", "Linked", commit=True)
 
 		_upsert_gift_card(doc, gift_card, customer_doc)
 
 		frappe.msgprint(
-			_("Gift Card <b>{0}</b> successfully created in Lightspeed (Balance: {1})").format(
-				doc.certificate_code, gift_card.get("balance")
+			_("Gift Card <b>{0}</b> successfully created in Lightspeed (Balance: {1}, Customer ID: {2})").format(
+				doc.certificate_code, gift_card.get("balance"), context.get("lightspeed_customer_id")
 			),
 			indicator="green",
 			alert=True,
 		)
 
 	except Exception as e:
+		context["error"] = str(e)
+		_console_log(f"Activation FAILED for {doc.certificate_code}", context)
 		frappe.log_error(
 			title="Lightspeed gift card activation failed",
 			message=_(
-				"Could not activate gift card {0} in Lightspeed for {1} {2} <{3}>.\n\n{4}"
+				"Could not fully activate gift certificate {0} in Lightspeed.\n\n"
+				"Progress so far - use this to work out what, if anything, still needs to be\n"
+				"finished manually in Lightspeed:\n{1}\n\n"
+				"Error: {2}\n\n{3}"
 			).format(
-				doc.certificate_code, doc.first_name, doc.last_name, doc.email, frappe.get_traceback()
+				doc.certificate_code,
+				frappe.as_json(context, indent=2),
+				e,
+				frappe.get_traceback(),
 			),
 		)
 		frappe.msgprint(
