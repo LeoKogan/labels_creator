@@ -2,6 +2,16 @@ import frappe
 from frappe import _
 
 
+def _console_log(label, data):
+	"""
+	Print the Lightspeed transaction data to the server console (stdout),
+	visible in `bench start`/worker logs - in addition to the Error Log
+	entry written on failure, so the request/response for a redemption can
+	be watched live while debugging, not just found after the fact.
+	"""
+	print(f"[Gift Certificate / Lightspeed] {label}:\n{frappe.as_json(data, indent=2)}")
+
+
 def activate_gift_certificate(doc):
 	"""
 	Called when a Gift Certificate is redeemed (see
@@ -215,9 +225,11 @@ def _activate_lightspeed(doc):
 
 		gift_card = _create_lightspeed_gift_card(base_url, headers, doc)
 		context["gift_card_response"] = gift_card
+		_console_log(f"Gift card created for {doc.certificate_code}", gift_card)
 		doc.db_set("status", "Activated", commit=True)
 
 		customer_doc = _link_lightspeed_customer(base_url, headers, doc, context)
+		_console_log(f"Customer linked for {doc.certificate_code}", context)
 		doc.db_set("status", "Linked", commit=True)
 
 		_upsert_gift_card(doc, gift_card, customer_doc)
@@ -231,6 +243,8 @@ def _activate_lightspeed(doc):
 		)
 
 	except Exception as e:
+		context["error"] = str(e)
+		_console_log(f"Activation FAILED for {doc.certificate_code}", context)
 		frappe.log_error(
 			title="Lightspeed gift card activation failed",
 			message=_(
