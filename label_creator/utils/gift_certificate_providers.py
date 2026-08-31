@@ -316,6 +316,20 @@ def _activate_lightspeed(doc):
 			"Accept": "application/json",
 		}
 
+		# Gift card creation needs its own scope (gift_cards:write:issue),
+		# which the general "Lightspeed" key may not carry - use a
+		# dedicated "Giftcards" row in Custom API Settings when one's
+		# configured, falling back to the general "Lightspeed" credentials
+		# otherwise so sites without a separate key keep working.
+		gift_card_token, gift_card_base_url = get_provider_credentials("Giftcards")
+		if not gift_card_token or not gift_card_base_url:
+			gift_card_token, gift_card_base_url = token, base_url
+		gift_card_headers = {
+			"Authorization": f"Bearer {gift_card_token}",
+			"Content-Type": "application/json",
+			"Accept": "application/json",
+		}
+
 		if doc.status in ("Activated", "Linked"):
 			# This is a retry after the customer-link step failed on an
 			# earlier attempt (status="Activated" doesn't block
@@ -327,7 +341,7 @@ def _activate_lightspeed(doc):
 			gift_card = {}
 			context["gift_card_response"] = "skipped - already Activated in an earlier attempt"
 		else:
-			gift_card = _create_lightspeed_gift_card(base_url, headers, doc)
+			gift_card = _create_lightspeed_gift_card(gift_card_base_url, gift_card_headers, doc)
 			context["gift_card_response"] = gift_card
 			_console_log(f"Gift card created for {doc.certificate_code}", gift_card)
 			doc.db_set("status", "Activated", commit=True)
