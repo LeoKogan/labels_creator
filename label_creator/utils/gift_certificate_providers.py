@@ -2,6 +2,11 @@ import frappe
 from frappe import _
 from frappe.integrations.utils import make_get_request, make_post_request
 
+# Lightspeed's Retail API is versioned by date, not "2.0" - confirmed against
+# a real 400 Bad Request that only went away once this segment was corrected
+# to match https://crafted.retail.lightspeed.app/api/2026-07/gift_cards.
+LIGHTSPEED_API_VERSION = "2026-07"
+
 
 def _console_log(label, data):
 	"""
@@ -89,7 +94,7 @@ def _create_lightspeed_gift_card(base_url, headers, doc):
 	certificate - the card now exists in Lightspeed and is usable, separate
 	from who (if anyone) it ends up linked to.
 	"""
-	url = f"{base_url}/2.0/gift_cards"
+	url = f"{base_url}/{LIGHTSPEED_API_VERSION}/gift_cards"
 	payload = {
 		"number": doc.certificate_code,
 		"amount": str(doc.amount),
@@ -117,7 +122,7 @@ def _create_lightspeed_gift_card(base_url, headers, doc):
 def _find_lightspeed_customer(base_url, headers, email):
 	"""Look up an existing Lightspeed customer by email. Returns the
 	customer record, or None if no match is found."""
-	url = f"{base_url}/2.0/customers"
+	url = f"{base_url}/{LIGHTSPEED_API_VERSION}/customers"
 	response = make_get_request(url, params={"email": email}, headers=headers)
 	response = response if isinstance(response, dict) else {}
 	customers = response.get("data") or []
@@ -126,7 +131,7 @@ def _find_lightspeed_customer(base_url, headers, email):
 
 def _create_lightspeed_customer(base_url, headers, doc):
 	"""Create a new Lightspeed customer from the redeemer's details."""
-	url = f"{base_url}/2.0/customers"
+	url = f"{base_url}/{LIGHTSPEED_API_VERSION}/customers"
 	payload = {
 		"first_name": doc.first_name,
 		"last_name": doc.last_name,
