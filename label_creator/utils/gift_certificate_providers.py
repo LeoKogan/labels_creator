@@ -1,6 +1,19 @@
+import re
+
 import frappe
 from frappe import _
 from frappe.integrations.utils import make_get_request, make_post_request
+
+# Matches the version segment Lightspeed's Retail API requires at the end
+# of the Base URL - either a dated version like ".../api/2026-07" or the
+# legacy ".../api/2.0". Used to catch a Base URL that's missing/dropped this
+# segment before it turns into a confusing 404 from Lightspeed itself (see
+# get_provider_credentials()).
+LIGHTSPEED_VERSIONED_BASE_URL_RE = re.compile(r"/(\d{4}-\d{2}|\d+\.\d+)$")
+
+# Matches a bare version like "2026-07" or "2.0", to validate the API Key
+# Detail row's own `api_version` field when present.
+LIGHTSPEED_API_VERSION_RE = re.compile(r"^(\d{4}-\d{2}|\d+\.\d+)$")
 
 
 def _console_log(label, data):
@@ -67,10 +80,13 @@ def get_provider_credentials(service_name):
 	the doctype doesn't exist on this site or no matching, enabled,
 	fully-configured row is found.
 
-	For "Lightspeed", Base URL must include the dated API version segment,
-	e.g. "https://crafted.retail.lightspeed.app/api/2026-07" - Lightspeed
-	revs this periodically, and there's no field here to split it out, so
-	bumping it is a Custom API Settings edit rather than a code change.
+	For "Lightspeed", the returned base_url has the API version segment
+	applied, e.g. "https://crafted.retail.lightspeed.app/api/2026-07" (or
+	the legacy "https://crafted.retail.lightspeed.app/api/2.0" - both are
+	accepted by Lightspeed). The version comes from the API Key Detail
+	row's own `api_version` field when that field is present and filled in
+	(e.g. "2026-07" or "2.0"); otherwise it must already be the last
+	segment of Base URL, for sites where that field doesn't exist.
 	"""
 	if not frappe.db.table_exists("Custom API Settings"):
 		return None, None
@@ -80,11 +96,58 @@ def get_provider_credentials(service_name):
 		for row in settings.get("api_keys") or []:
 			if row.service_name == service_name and row.enabled:
 				token = row.get_password("api_key")
-				base_url = (row.base_url or "").rstrip("/")
+				base_url = (row.base_url or "").strip().rstrip("/")
 				if token and base_url:
+					if service_name == "Lightspeed":
+						base_url = _lightspeed_versioned_base_url(row, base_url)
 					return token, base_url
 
 	return None, None
+
+
+def _lightspeed_versioned_base_url(row, base_url):
+	"""
+	Append the API Key Detail row's `api_version` (e.g. "2026-07") to
+	base_url if that field exists and is filled in. Otherwise, fall back to
+	requiring the version already be the last segment of base_url, and fail
+	loudly rather than let a missing/blank version silently 404 every
+	Lightspeed request.
+	"""
+	api_version = (row.get("api_version") or "").strip()
+	if api_version:
+		if not LIGHTSPEED_API_VERSION_RE.match(api_version):
+			frappe.throw(
+				_(
+					"Lightspeed API Version in Custom API Settings is not a recognized "
+					"version (expected e.g. 2026-07 or 2.0) - got {0}."
+				).format(api_version)
+			)
+		return f"{base_url}/{api_version}"
+
+	if not LIGHTSPEED_VERSIONED_BASE_URL_RE.search(base_url):
+		frappe.throw(
+			_(
+				"Lightspeed Base URL in Custom API Settings is missing its API version "
+				"segment (e.g. .../api/2026-07 or .../api/2.0) - got {0}. Without it, "
+				"every request 404s against Lightspeed. Either set API Version on the "
+				"row, or add the version segment to Base URL, and try again."
+			).format(base_url)
+		)
+	return base_url
+
+
+def _unwrap_lightspeed_object(response):
+	"""
+	Lightspeed's dated API versions (e.g. 2026-07) wrap a single-object
+	response as {"data": {...}}, but the legacy 2.0 version returns the
+	object flat - confirmed against a real POST /gift_cards response on
+	2.0 that had no "data" key at all. Handle both so callers don't
+	silently treat a real object as "not found" just because it wasn't
+	wrapped.
+	"""
+	response = response if isinstance(response, dict) else {}
+	data = response.get("data")
+	return data if isinstance(data, dict) else response
 
 
 def _create_lightspeed_gift_card(base_url, headers, doc):
@@ -97,7 +160,10 @@ def _create_lightspeed_gift_card(base_url, headers, doc):
 	url = f"{base_url}/gift_cards"
 	payload = {
 		"number": doc.certificate_code,
-		"amount": str(doc.amount),
+		# Sent as a raw JSON number, not a quoted string - str(doc.amount)
+		# on a currency field like 35.0 also produced "35.0" (one decimal),
+		# not "35.00", either of which could 400 against Lightspeed.
+		"amount": round(float(doc.amount), 2),
 		# expires_at is intentionally omitted/left empty - the gift
 		# certificate's own expiration is tracked in the ERP, not mirrored
 		# as a Lightspeed gift card expiry. time_zone/user_id are likewise
@@ -105,8 +171,7 @@ def _create_lightspeed_gift_card(base_url, headers, doc):
 	}
 
 	data = make_post_request(url, json=payload, headers=headers)
-	data = data if isinstance(data, dict) else {}
-	gift_card = data.get("data") or {}
+	gift_card = _unwrap_lightspeed_object(data)
 
 	# Lightspeed responding 200 isn't proof the card exists - only a
 	# returned id/number confirms it. Without that, treat this as a
@@ -139,8 +204,7 @@ def _create_lightspeed_customer(base_url, headers, doc):
 		"phone": doc.phone_number,
 	}
 	response = make_post_request(url, json=payload, headers=headers)
-	response = response if isinstance(response, dict) else {}
-	customer = response.get("data") or {}
+	customer = _unwrap_lightspeed_object(response)
 	if not customer.get("id"):
 		frappe.throw(_("Lightspeed did not return a customer ID after creation."))
 	return customer
@@ -252,6 +316,20 @@ def _activate_lightspeed(doc):
 			"Accept": "application/json",
 		}
 
+		# Gift card creation needs its own scope (gift_cards:write:issue),
+		# which the general "Lightspeed" key may not carry - use a
+		# dedicated "Giftcards" row in Custom API Settings when one's
+		# configured, falling back to the general "Lightspeed" credentials
+		# otherwise so sites without a separate key keep working.
+		gift_card_token, gift_card_base_url = get_provider_credentials("Giftcards")
+		if not gift_card_token or not gift_card_base_url:
+			gift_card_token, gift_card_base_url = token, base_url
+		gift_card_headers = {
+			"Authorization": f"Bearer {gift_card_token}",
+			"Content-Type": "application/json",
+			"Accept": "application/json",
+		}
+
 		if doc.status in ("Activated", "Linked"):
 			# This is a retry after the customer-link step failed on an
 			# earlier attempt (status="Activated" doesn't block
@@ -263,7 +341,7 @@ def _activate_lightspeed(doc):
 			gift_card = {}
 			context["gift_card_response"] = "skipped - already Activated in an earlier attempt"
 		else:
-			gift_card = _create_lightspeed_gift_card(base_url, headers, doc)
+			gift_card = _create_lightspeed_gift_card(gift_card_base_url, gift_card_headers, doc)
 			context["gift_card_response"] = gift_card
 			_console_log(f"Gift card created for {doc.certificate_code}", gift_card)
 			doc.db_set("status", "Activated", commit=True)
