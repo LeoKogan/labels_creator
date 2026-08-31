@@ -1,5 +1,6 @@
 import frappe
 from frappe import _
+from frappe.integrations.utils import make_get_request, make_post_request
 
 
 def _console_log(label, data):
@@ -88,7 +89,7 @@ def _create_lightspeed_gift_card(base_url, headers, doc):
 		# left out.
 	}
 
-	data = frappe.make_post_request(url, json=payload, headers=headers)
+	data = make_post_request(url, json=payload, headers=headers)
 	data = data if isinstance(data, dict) else {}
 	gift_card = data.get("data") or {}
 
@@ -107,7 +108,7 @@ def _find_lightspeed_customer(base_url, headers, email):
 	"""Look up an existing Lightspeed customer by email. Returns the
 	customer record, or None if no match is found."""
 	url = f"{base_url}/2.0/customers"
-	response = frappe.make_get_request(url, params={"email": email}, headers=headers)
+	response = make_get_request(url, params={"email": email}, headers=headers)
 	response = response if isinstance(response, dict) else {}
 	customers = response.get("data") or []
 	return customers[0] if customers else None
@@ -122,7 +123,7 @@ def _create_lightspeed_customer(base_url, headers, doc):
 		"email": doc.email,
 		"phone": doc.phone_number,
 	}
-	response = frappe.make_post_request(url, json=payload, headers=headers)
+	response = make_post_request(url, json=payload, headers=headers)
 	response = response if isinstance(response, dict) else {}
 	customer = response.get("data") or {}
 	if not customer.get("id"):
