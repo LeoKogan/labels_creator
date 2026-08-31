@@ -4,15 +4,16 @@ import frappe
 from frappe import _
 from frappe.integrations.utils import make_get_request, make_post_request
 
-# Matches the dated version segment Lightspeed's Retail API requires at the
-# end of the Base URL, e.g. ".../api/2026-07". Used to catch a Base URL
-# that's missing/dropped this segment before it turns into a confusing 404
-# from Lightspeed itself (see get_provider_credentials()).
-LIGHTSPEED_VERSIONED_BASE_URL_RE = re.compile(r"/\d{4}-\d{2}$")
+# Matches the version segment Lightspeed's Retail API requires at the end
+# of the Base URL - either a dated version like ".../api/2026-07" or the
+# legacy ".../api/2.0". Used to catch a Base URL that's missing/dropped this
+# segment before it turns into a confusing 404 from Lightspeed itself (see
+# get_provider_credentials()).
+LIGHTSPEED_VERSIONED_BASE_URL_RE = re.compile(r"/(\d{4}-\d{2}|\d+\.\d+)$")
 
-# Matches a bare dated version like "2026-07", to validate the API Key
+# Matches a bare version like "2026-07" or "2.0", to validate the API Key
 # Detail row's own `api_version` field when present.
-LIGHTSPEED_API_VERSION_RE = re.compile(r"^\d{4}-\d{2}$")
+LIGHTSPEED_API_VERSION_RE = re.compile(r"^(\d{4}-\d{2}|\d+\.\d+)$")
 
 
 def _console_log(label, data):
@@ -79,11 +80,12 @@ def get_provider_credentials(service_name):
 	the doctype doesn't exist on this site or no matching, enabled,
 	fully-configured row is found.
 
-	For "Lightspeed", the returned base_url has the dated API version
-	segment applied, e.g. "https://crafted.retail.lightspeed.app/api/2026-07"
-	- Lightspeed revs this periodically. The version comes from the API Key
-	Detail row's own `api_version` field when that field is present and
-	filled in (e.g. "2026-07"); otherwise it must already be the last
+	For "Lightspeed", the returned base_url has the API version segment
+	applied, e.g. "https://crafted.retail.lightspeed.app/api/2026-07" (or
+	the legacy "https://crafted.retail.lightspeed.app/api/2.0" - both are
+	accepted by Lightspeed). The version comes from the API Key Detail
+	row's own `api_version` field when that field is present and filled in
+	(e.g. "2026-07" or "2.0"); otherwise it must already be the last
 	segment of Base URL, for sites where that field doesn't exist.
 	"""
 	if not frappe.db.table_exists("Custom API Settings"):
@@ -116,8 +118,8 @@ def _lightspeed_versioned_base_url(row, base_url):
 		if not LIGHTSPEED_API_VERSION_RE.match(api_version):
 			frappe.throw(
 				_(
-					"Lightspeed API Version in Custom API Settings is not a dated version "
-					"(expected e.g. 2026-07) - got {0}."
+					"Lightspeed API Version in Custom API Settings is not a recognized "
+					"version (expected e.g. 2026-07 or 2.0) - got {0}."
 				).format(api_version)
 			)
 		return f"{base_url}/{api_version}"
@@ -125,10 +127,10 @@ def _lightspeed_versioned_base_url(row, base_url):
 	if not LIGHTSPEED_VERSIONED_BASE_URL_RE.search(base_url):
 		frappe.throw(
 			_(
-				"Lightspeed Base URL in Custom API Settings is missing its dated API "
-				"version segment (e.g. .../api/2026-07) - got {0}. Without it, every "
-				"request 404s against Lightspeed. Either set API Version on the row, "
-				"or add the version segment to Base URL, and try again."
+				"Lightspeed Base URL in Custom API Settings is missing its API version "
+				"segment (e.g. .../api/2026-07 or .../api/2.0) - got {0}. Without it, "
+				"every request 404s against Lightspeed. Either set API Version on the "
+				"row, or add the version segment to Base URL, and try again."
 			).format(base_url)
 		)
 	return base_url
