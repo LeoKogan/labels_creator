@@ -252,10 +252,21 @@ def _activate_lightspeed(doc):
 			"Accept": "application/json",
 		}
 
-		gift_card = _create_lightspeed_gift_card(base_url, headers, doc)
-		context["gift_card_response"] = gift_card
-		_console_log(f"Gift card created for {doc.certificate_code}", gift_card)
-		doc.db_set("status", "Activated", commit=True)
+		if doc.status in ("Activated", "Linked"):
+			# This is a retry after the customer-link step failed on an
+			# earlier attempt (status="Activated" doesn't block
+			# re-redemption - only Linked/Cancelled/Suspended/Expired do).
+			# The gift card already exists in Lightspeed; recreating it
+			# would send a duplicate `number` and likely get rejected,
+			# wrongly telling an already-activated customer their card
+			# failed. Skip straight to (re)trying the customer link.
+			gift_card = {}
+			context["gift_card_response"] = "skipped - already Activated in an earlier attempt"
+		else:
+			gift_card = _create_lightspeed_gift_card(base_url, headers, doc)
+			context["gift_card_response"] = gift_card
+			_console_log(f"Gift card created for {doc.certificate_code}", gift_card)
+			doc.db_set("status", "Activated", commit=True)
 
 	except Exception as e:
 		context["error"] = str(e)
@@ -283,7 +294,7 @@ def _activate_lightspeed(doc):
 
 		frappe.msgprint(
 			_("Gift Card <b>{0}</b> successfully created in Lightspeed (Balance: {1}, Customer ID: {2})").format(
-				doc.certificate_code, gift_card.get("balance"), context.get("lightspeed_customer_id")
+				doc.certificate_code, gift_card.get("balance", doc.amount), context.get("lightspeed_customer_id")
 			),
 			indicator="green",
 			alert=True,
