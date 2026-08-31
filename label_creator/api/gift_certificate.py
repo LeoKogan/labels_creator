@@ -137,12 +137,15 @@ def _register(gift_certificate, first_name, last_name, email, phone_number):
 	doc.phone_number = phone_number
 	doc.redeem_date = nowdate()
 	doc.redeemed_by = customer
-	doc.status = "Linked"
 	doc.save(ignore_permissions=True)
 	frappe.db.commit()
 
 	# Create the matching POS gift card (e.g. Lightspeed) now that the
 	# certificate is actually being redeemed, not when it was first created.
+	# This is what actually advances status: Activated once the gift card is
+	# confirmed created, Linked once the customer is confirmed linked. If
+	# there's no provider configured, or activation fails outright, status
+	# stays as-is rather than jumping ahead of what actually happened.
 	activate_gift_certificate(doc)
 
 	return {
