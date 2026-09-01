@@ -41,6 +41,7 @@ dependencies = [
 
 [tool.bench.frappe-dependencies]
 frappe = ">=15.0.0,<16.0.0"
+erpnext = ">=15.0.0,<16.0.0"
 
 [project.urls]
 Homepage = "https://github.com/yourusername/label_creator"
