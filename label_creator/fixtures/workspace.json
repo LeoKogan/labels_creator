@@ -85,5 +85,6 @@
    "type": "DocType"
   }
  ],
- "title": "Labels"
+ "title": "Labels",
+ "type": "Workspace"
 }
