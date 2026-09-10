@@ -10,10 +10,9 @@ app_license = "MIT"
 # Website
 # --------
 
-# Add to website context
-website_context = {
-    "brand_html": "Label Creator"
-}
+# Do NOT set global brand_html — that stamped "Label Creator" on every website
+# page (including Consignor employee/consignor portals). Brand only on LC routes.
+update_website_context = "label_creator.website_context.update_website_context"
 
 # Add custom route to website sidebar
 # This adds the Label Creator link to the sidebar without creating a Web Page
