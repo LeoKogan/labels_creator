@@ -252,7 +252,7 @@ def _link_lightspeed_customer(base_url, headers, doc, context):
 	"""
 	Call 2 of 2: find or create the redeemer's Lightspeed customer, and
 	record the link on their ERPNext Customer record (custom_lightspeed_id /
-	lightspeed_customer_code) so this and future redemptions reuse the same
+	custom_lightspeed_customer_code) so this and future redemptions reuse the same
 	Lightspeed customer instead of creating duplicates. A confirmed link is
 	what "Linked" means for this certificate.
 
@@ -283,16 +283,16 @@ def _link_lightspeed_customer(base_url, headers, doc, context):
 
 		customer_doc.db_set("custom_lightspeed_id", lightspeed_customer.get("id"), commit=True)
 		customer_doc.db_set(
-			"lightspeed_customer_code", lightspeed_customer.get("customer_code"), commit=True
+			"custom_lightspeed_customer_code", lightspeed_customer.get("customer_code"), commit=True
 		)
 
 	context["lightspeed_customer_id"] = customer_doc.get("custom_lightspeed_id")
-	context["lightspeed_customer_code"] = customer_doc.get("lightspeed_customer_code")
+	context["lightspeed_customer_code"] = customer_doc.get("custom_lightspeed_customer_code")
 
 	# Mirror the link onto the certificate itself so it's visible on the
 	# Gift Certificate form, not just on the linked Customer record.
 	doc.db_set(
-		"lightspeed_customer_code", customer_doc.get("lightspeed_customer_code"), commit=True
+		"lightspeed_customer_code", customer_doc.get("custom_lightspeed_customer_code"), commit=True
 	)
 
 	return customer_doc
