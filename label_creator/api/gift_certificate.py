@@ -184,8 +184,8 @@ def _get_or_create_customer(first_name, last_name, email, phone_number):
 		"doctype": "Customer",
 		"customer_name": f"{first_name} {last_name}".strip(),
 		"customer_type": "Individual",
-		"customer_group": frappe.db.get_single_value("Selling Settings", "customer_group") or "All Customer Groups",
-		"territory": frappe.db.get_single_value("Selling Settings", "territory") or "All Territories",
+		"customer_group": frappe.db.get_single_value("Selling Settings", "customer_group") or "Individual",
+		"territory": frappe.db.get_single_value("Selling Settings", "territory") or "Canada",
 		"email_id": email,
 		"mobile_no": phone_number,
 	})
