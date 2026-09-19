@@ -151,7 +151,8 @@
         // Pre-validate code
         fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Frappe-CSRF-Token': (window.frappe && frappe.csrf_token) ? frappe.csrf_token : '' },
+            credentials: 'same-origin',
             body: JSON.stringify({ action: 'validate', certificate_code: code })
         })
         .then(response => response.json())
@@ -214,7 +215,8 @@
 
             fetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Frappe-CSRF-Token': (window.frappe && frappe.csrf_token) ? frappe.csrf_token : '' },
+            credentials: 'same-origin',
                 body: JSON.stringify(payload)
             })
             .then(response => response.json())
